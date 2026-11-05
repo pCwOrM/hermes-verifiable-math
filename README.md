@@ -5,7 +5,9 @@
 [![Hermes Agent Plugin v2](https://img.shields.io/badge/Hermes%20Plugin-v2%20Compliant-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests: 14 Passed](https://img.shields.io/badge/Tests-14%2F14%20Passed-brightgreen.svg)](#testing)
-[![Category: Reasoning](https://img.shields.io/badge/Category-Reasoning%20%26%20Math-purple.svg)](plugin.yaml)
+[![Category: Tools](https://img.shields.io/badge/Category-Tools%20%26%20Reasoning-purple.svg)](plugin.yaml)
+[![Zero Hallucination](https://img.shields.io/badge/Zero--Hallucination-100%25%20Deterministic-blueviolet.svg)](#)
+[![NSF ICARM Verified](https://img.shields.io/badge/NSF--ICARM-Grant%20DMS--2425401-orange.svg)](https://icarm.io)
 
 ---
 

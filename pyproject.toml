@@ -19,6 +19,27 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Security :: Cryptography",
 ]
+keywords = [
+    "hermes-agent",
+    "hermes-agent-plugin",
+    "nousresearch",
+    "mathematical-reasoning",
+    "formal-verification",
+    "lean4",
+    "symbolic-computation",
+    "zero-hallucination",
+    "elliptic-curves",
+    "integer-factorization",
+    "baillie-psw",
+    "proof-certificates",
+    "sympy",
+]
+
+[project.urls]
+Homepage = "https://github.com/pCwOrM/hermes-verifiable-math"
+Documentation = "https://github.com/pCwOrM/hermes-verifiable-math#readme"
+"Hermes Agent" = "https://hermes-agent.nousresearch.com"
+"CERN Zenodo Archive" = "https://doi.org/10.5281/zenodo.23436282"
 requires-python = ">=3.10"
 dependencies = [
     "sympy>=1.12",
