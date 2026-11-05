@@ -1,0 +1,20 @@
+name: verifiable-math-kernel
+version: "1.0.0"
+description: >-
+  Deterministic symbolic computation, certified integer factorization,
+  elliptic curve invariant analysis, and formal Lean 4 proof verification for Hermes Agent.
+maintainer: pCwOrM
+tier: community
+category: reasoning
+requires_hermes: ">=0.21.0"
+platforms: []
+capabilities:
+  provides_tools:
+    - verify_math_claim
+    - certified_factorization
+    - elliptic_curve_analyzer
+    - lean4_proof_audit
+  provides_hooks:
+    - pre_tool_call
+    - post_tool_call
+requires_env: []
