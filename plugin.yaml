@@ -5,7 +5,7 @@ description: >-
   elliptic curve invariant analysis, and formal Lean 4 proof verification for Hermes Agent.
 maintainer: pCwOrM
 tier: community
-category: reasoning
+category: tools
 requires_hermes: ">=0.21.0"
 platforms: []
 capabilities:

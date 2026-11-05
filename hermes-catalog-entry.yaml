@@ -5,7 +5,7 @@ tier: community
 description: >-
   Deterministic symbolic computation, certified integer factorization,
   elliptic curve invariant analysis, and formal Lean 4 proof verification for Hermes Agent.
-category: reasoning
+category: tools
 maintainer: pCwOrM
 capabilities:
   provides_tools:
