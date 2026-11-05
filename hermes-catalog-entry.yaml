@@ -1,6 +1,6 @@
 name: verifiable-math-kernel
 repo: https://github.com/pCwOrM/hermes-verifiable-math
-sha: 4be85a769a301cbf4eb23d991cb0ed060fb99da7
+sha: d8fdf7f4f664a39b360f2efbc7c1fba7aa5eaae3
 tier: community
 description: >-
   Deterministic symbolic computation, certified integer factorization,
