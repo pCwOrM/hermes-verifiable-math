@@ -6,7 +6,7 @@ Implements exact symbolic mathematics, factorization, elliptic curve analysis, a
 import hashlib
 import json
 import re
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 import sympy as sp
 from sympy.parsing.sympy_parser import (
@@ -14,12 +14,15 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     implicit_multiplication_application,
     convert_xor,
+    rationalize,
 )
 
 try:
     from . import sieve_core, elliptic_core, lean_core
 except (ImportError, ValueError):
-    import sieve_core, elliptic_core, lean_core
+    import sieve_core  # type: ignore
+    import elliptic_core  # type: ignore
+    import lean_core  # type: ignore
 
 # Safe mathematical globals for SymPy expression parsing (no builtins)
 _SAFE_SYMPY_GLOBALS: Dict[str, Any] = {
@@ -58,8 +61,19 @@ _SAFE_SYMPY_GLOBALS: Dict[str, Any] = {
 
 _UNSAFE_EXPR_PATTERN = re.compile(r"(__|import|eval|exec|open|getattr|setattr|delattr|globals|locals|lambda|\[|\]|\{|\}|\"|\'|;)")
 
+_DOMAIN_ASSUMPTIONS: Dict[str, Dict[str, bool]] = {
+    "real": {"real": True},
+    "integer": {"integer": True, "real": True},
+    "rational": {"rational": True, "real": True},
+    "complex": {"complex": True},
+}
 
-def _safe_parse_expr(expr_str: str) -> sp.Expr:
+
+def _safe_parse_expr(
+    expr_str: str,
+    domain: str = "real",
+    variables: Optional[List[str]] = None,
+) -> sp.Expr:
     """Safely parse a mathematical expression without exposing Python builtins or attribute access."""
     cleaned = expr_str.strip()
     if len(cleaned) > 1000:
@@ -70,12 +84,24 @@ def _safe_parse_expr(expr_str: str) -> sp.Expr:
     if re.search(r"(?<![0-9])\.|\.(?![0-9])", cleaned):
         raise ValueError("Attribute access is not permitted in mathematical expressions.")
 
+    norm_domain = domain if domain in _DOMAIN_ASSUMPTIONS else "real"
+    assumptions = _DOMAIN_ASSUMPTIONS[norm_domain]
+
     transformations = standard_transformations + (implicit_multiplication_application, convert_xor)
-    # Pre-populate single-letter and standard identifier symbols in local_dict
+    if norm_domain == "rational":
+        transformations = transformations + (rationalize,)
+
     local_dict: Dict[str, Any] = {}
+    if variables and isinstance(variables, list):
+        for var_name in variables:
+            if isinstance(var_name, str):
+                v_clean = var_name.strip()
+                if re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", v_clean) and v_clean not in _SAFE_SYMPY_GLOBALS:
+                    local_dict[v_clean] = sp.Symbol(v_clean, **assumptions)
+
     for ident in re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", cleaned):
-        if ident not in _SAFE_SYMPY_GLOBALS:
-            local_dict[ident] = sp.Symbol(ident)
+        if ident not in _SAFE_SYMPY_GLOBALS and ident not in local_dict:
+            local_dict[ident] = sp.Symbol(ident, **assumptions)
 
     return parse_expr(
         cleaned,
@@ -90,27 +116,39 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
     """
     Evaluates and formally verifies an algebraic statement or equation.
     """
-    statement = args.get("statement", "").strip()
+    statement = str(args.get("statement", "")).strip()
     if not statement:
         return json.dumps({"error": "No statement provided."}, indent=2)
+
+    raw_domain = str(args.get("domain", "real")).strip().lower()
+    domain = raw_domain if raw_domain in _DOMAIN_ASSUMPTIONS else "real"
+    variables = args.get("variables")
+    var_list = [str(v) for v in variables] if isinstance(variables, list) else None
 
     try:
         # Check for equality statement
         if "==" in statement or "=" in statement:
             delim = "==" if "==" in statement else "="
             parts = statement.split(delim, 1)
-            lhs_expr = _safe_parse_expr(parts[0])
-            rhs_expr = _safe_parse_expr(parts[1])
+            lhs_expr = _safe_parse_expr(parts[0], domain=domain, variables=var_list)
+            rhs_expr = _safe_parse_expr(parts[1], domain=domain, variables=var_list)
 
             diff = sp.simplify(lhs_expr - rhs_expr)
             is_zero = diff.is_zero
-            if is_zero is None:
+            if is_zero is None or is_zero is False:
                 # Try trigsimp, expand, factor
-                diff = sp.trigsimp(sp.expand(diff))
-                is_zero = (diff == 0)
+                diff_alt = sp.trigsimp(sp.expand(diff))
+                if diff_alt == 0 or getattr(diff_alt, "is_zero", False):
+                    diff = sp.Integer(0)
+                    is_zero = True
+                else:
+                    is_zero = (diff == 0)
 
+            free_syms = sorted(str(s) for s in (lhs_expr.free_symbols | rhs_expr.free_symbols))
             result = {
                 "statement": statement,
+                "domain": domain,
+                "free_symbols": free_syms,
                 "verified": bool(is_zero),
                 "lhs_canonical": str(lhs_expr),
                 "rhs_canonical": str(rhs_expr),
@@ -121,13 +159,16 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
             }
         else:
             # Single expression simplification / evaluation
-            expr = _safe_parse_expr(statement)
+            expr = _safe_parse_expr(statement, domain=domain, variables=var_list)
             simplified = sp.simplify(expr)
             factored = sp.factor(expr)
             expanded = sp.expand(expr)
+            free_syms = sorted(str(s) for s in expr.free_symbols)
 
             result = {
                 "expression": statement,
+                "domain": domain,
+                "free_symbols": free_syms,
                 "simplified": str(simplified),
                 "factored": str(factored),
                 "expanded": str(expanded),
@@ -151,9 +192,14 @@ def certified_factorization_handler(args: Dict[str, Any]) -> str:
     if n is None:
         return json.dumps({"error": "Integer 'n' is required."}, indent=2)
 
+    generate_certificates = bool(args.get("generate_certificates", True))
+
     try:
         n_int = int(n)
-        fact_result = sieve_core.factorize_integer(n_int)
+        fact_result = sieve_core.factorize_integer(
+            n_int,
+            generate_certificates=generate_certificates,
+        )
         fact_result["sieve_method"] = "Werr 4-Stage Multi-Layer Algebraic Sieve & Baillie-PSW"
         return json.dumps(fact_result, indent=2)
     except Exception as e:
@@ -168,6 +214,8 @@ def elliptic_curve_analyzer_handler(args: Dict[str, Any]) -> str:
     if not coeffs or len(coeffs) not in (2, 5):
         return json.dumps({"error": "Weierstrass coefficients must be 5 integers [a1,a2,a3,a4,a6] or 2 integers [a,b]."}, indent=2)
 
+    compute_torsion = bool(args.get("compute_torsion", True))
+
     try:
         if len(coeffs) == 2:
             a, b = coeffs
@@ -175,7 +223,7 @@ def elliptic_curve_analyzer_handler(args: Dict[str, Any]) -> str:
         else:
             curve = elliptic_core.EllipticCurve(*coeffs)
 
-        analysis = curve.analyze()
+        analysis = curve.analyze(compute_torsion=compute_torsion)
         analysis["framework"] = "NSF ICARM Conformal Elliptic Curve Invariant Kernel"
         return json.dumps(analysis, indent=2)
     except Exception as e:
@@ -186,7 +234,7 @@ def lean4_proof_audit_handler(args: Dict[str, Any]) -> str:
     """
     Audits Lean 4 code snippets for unproven holes (sorry) and formal soundness.
     """
-    lean_code = args.get("lean_code", "").strip()
+    lean_code = str(args.get("lean_code", "")).strip()
     if not lean_code:
         return json.dumps({"error": "No Lean 4 code provided."}, indent=2)
 
@@ -203,7 +251,7 @@ def math_cli_status(args_str: str = "") -> str:
     """
     if not args_str.strip():
         return (
-            "Hermes Verifiable Math Kernel [v1.0.1]\n"
+            "Hermes Verifiable Math Kernel [v1.0.2]\n"
             "Engine: SymPy CAS + Werr Multi-Layer Sieve + Baillie-PSW + Lean 4\n"
             "Usage: /verify <math_expression_or_equality>"
         )

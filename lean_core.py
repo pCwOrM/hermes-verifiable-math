@@ -10,6 +10,7 @@ import subprocess
 from typing import Dict, Any, Optional
 
 _ENABLE_LEAN_CLI: bool = True
+_ENABLE_LEAN_CLI_BY_SCOPE: Dict[str, bool] = {}
 
 # Block Lean metaprogramming / IO / FFI directives before invoking `lean --stdin`
 _UNSAFE_LEAN_DIRECTIVES = re.compile(
@@ -17,11 +18,28 @@ _UNSAFE_LEAN_DIRECTIVES = re.compile(
 )
 
 
+def _active_scope_key() -> str:
+    """Resolve active Hermes profile scope key for multi-profile process isolation."""
+    try:
+        from hermes_constants import get_hermes_home
+
+        return str(get_hermes_home().expanduser().resolve())
+    except Exception:
+        return "default"
+
+
 def configure_runtime(enable_lean_cli: Optional[bool] = None) -> None:
-    """Configure runtime options from Hermes plugin config."""
+    """Configure runtime options from Hermes plugin config (isolated per profile scope)."""
     global _ENABLE_LEAN_CLI
     if enable_lean_cli is not None:
-        _ENABLE_LEAN_CLI = bool(enable_lean_cli)
+        flag = bool(enable_lean_cli)
+        _ENABLE_LEAN_CLI = flag
+        _ENABLE_LEAN_CLI_BY_SCOPE[_active_scope_key()] = flag
+
+
+def is_lean_cli_enabled() -> bool:
+    """Return whether local Lean 4 CLI invocation is enabled for the active profile scope."""
+    return _ENABLE_LEAN_CLI_BY_SCOPE.get(_active_scope_key(), _ENABLE_LEAN_CLI)
 
 
 def audit_lean4_code(code: str) -> Dict[str, Any]:
@@ -66,7 +84,7 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
 
     # 4. Check for unsafe/IO directives before running local Lean 4 CLI
     unsafe_match = _UNSAFE_LEAN_DIRECTIVES.search(code)
-    lean_bin = shutil.which("lean") if _ENABLE_LEAN_CLI else None
+    lean_bin = shutil.which("lean") if is_lean_cli_enabled() else None
     compiler_verified = False
     compiler_output = ""
 

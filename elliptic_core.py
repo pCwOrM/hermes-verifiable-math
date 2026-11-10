@@ -7,7 +7,10 @@ and 2-descent rank filtration.
 import math
 from typing import Dict, List, Tuple, Any, Optional
 from fractions import Fraction
-import sieve_core
+try:
+    from . import sieve_core
+except (ImportError, ValueError):
+    import sieve_core  # type: ignore
 
 
 class EllipticCurve:
@@ -156,10 +159,18 @@ class EllipticCurve:
         else:
             return f"Z/{n}Z"
 
-    def analyze(self) -> Dict[str, Any]:
+    def analyze(self, compute_torsion: bool = True) -> Dict[str, Any]:
         """Full invariant analysis of the elliptic curve."""
-        tors_points = self.compute_torsion_points()
-        tors_group = self.classify_torsion_group(tors_points)
+        if compute_torsion:
+            tors_points = self.compute_torsion_points()
+            tors_group = self.classify_torsion_group(tors_points)
+            tors_order: Optional[int] = len(tors_points) + 1
+            tors_gens = tors_points[:5]
+        else:
+            tors_points = []
+            tors_group = "skipped (compute_torsion=False)"
+            tors_order = None
+            tors_gens = []
 
         delta_fact = sieve_core.factorize_integer(abs(self.delta))
         bad_primes = [p for p, _ in delta_fact["factors"]]
@@ -186,9 +197,10 @@ class EllipticCurve:
             "bad_primes": bad_primes,
             "bad_primes_count": len(bad_primes),
             "discriminant_factorization": delta_fact["factor_string"],
-            "torsion_order": len(tors_points) + 1,
+            "torsion_computed": compute_torsion,
+            "torsion_order": tors_order,
             "torsion_group": tors_group,
-            "torsion_generators": tors_points[:5],
+            "torsion_generators": tors_gens,
             "estimated_conductor_bound": conductor_bound,
             "nsf_icarm_conformant": True,
         }

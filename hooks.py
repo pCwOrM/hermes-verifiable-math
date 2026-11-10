@@ -5,8 +5,11 @@ Floating-point precision safety guard and cryptographic proof telemetry.
 
 import hashlib
 import json
+import logging
 import re
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def math_pre_execution_guard(
@@ -19,6 +22,8 @@ def math_pre_execution_guard(
     Pre-tool execution hook:
     Inspects tool arguments for risky floating-point precision traps (e.g., 0.1 + 0.2)
     or large integer conversions, preventing catastrophic round-off hallucinations.
+    When `verify_math_claim` is called with decimal floats and no explicit domain,
+    returns `{"action": "modify", "args": ...}` to auto-select exact `rational` domain.
     """
     warning = None
     safe_args = args if isinstance(args, dict) else {}
@@ -28,7 +33,8 @@ def math_pre_execution_guard(
 
     # Detect IEEE-754 precision trap: e.g. 0.1 + 0.2 or float decimals in exact math
     float_pattern = re.compile(r"\b0\.[0-9]{1,4}\s*[\+\-\*\/]\s*0\.[0-9]{1,4}\b")
-    if float_pattern.search(args_str):
+    has_float_trap = bool(float_pattern.search(args_str))
+    if has_float_trap:
         warning = (
             "[MATH-SAFETY-WARN] Detected decimal floating-point arithmetic. "
             "Use exact rational arithmetic (fractions or SymPy Rational) to avoid IEEE 754 precision loss."
@@ -41,6 +47,16 @@ def math_pre_execution_guard(
             "[MATH-SAFETY-WARN] Integer exceeds 2^53 JavaScript/IEEE-754 float mantissa limit. "
             "Ensure big-integer precision is maintained without float coercion."
         )
+
+    if warning:
+        logger.warning("%s (tool=%s, task=%s)", warning, tool_name, task_id)
+        if tool_name == "verify_math_claim" and has_float_trap and "domain" not in safe_args:
+            return {
+                "action": "modify",
+                "args": {**safe_args, "domain": "rational"},
+                "warning": warning,
+                "intercepted": True,
+            }
 
     return {
         "action": "proceed",
@@ -64,6 +80,6 @@ def math_post_execution_verifier(
     cert_hash = hashlib.sha256(result_str.encode("utf-8")).hexdigest()[:16]
 
     return {
-        "verified_by": "Hermes-Verifiable-Math-v1.0.1",
+        "verified_by": "Hermes-Verifiable-Math-v1.0.2",
         "proof_stamp": f"[VERIFIED-MATH-PROOF-v1:{cert_hash}]",
     }

@@ -4,7 +4,7 @@
 
 [![Hermes Community Plugin](https://img.shields.io/badge/Hermes%20Plugin-Community-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 15 Passed](https://img.shields.io/badge/Tests-15%2F15%20Passed-brightgreen.svg)](#testing)
+[![Tests: 21 Passed](https://img.shields.io/badge/Tests-21%2F21%20Passed-brightgreen.svg)](#testing)
 [![Category: Tools](https://img.shields.io/badge/Category-Tools%20%26%20Reasoning-purple.svg)](plugin.yaml)
 [![arXiv:2611.11641](https://img.shields.io/badge/arXiv-2611.11641%20%5Bcs.LO%5D-b31b1b.svg)](https://arxiv.org/abs/2611.11641)
 [![NSF ICARM Verified](https://img.shields.io/badge/NSF--ICARM-Grant%20DMS--2425401-orange.svg)](https://icarm.io)
@@ -187,18 +187,25 @@ Output:
 tests/test_doctor.py::test_manifest_structure PASSED
 tests/test_doctor.py::test_register_context_wiring PASSED
 tests/test_hooks.py::test_pre_hook_precision_trap_detection PASSED
+tests/test_hooks.py::test_pre_hook_auto_rational_upgrade_on_verify_math_claim PASSED
 tests/test_hooks.py::test_pre_hook_clean_call PASSED
 tests/test_hooks.py::test_post_hook_proof_stamp PASSED
 tests/test_tools.py::test_verify_trig_identity PASSED
 tests/test_tools.py::test_verify_algebraic_identity PASSED
+tests/test_tools.py::test_verify_rational_domain_exact_decimal PASSED
+tests/test_tools.py::test_verify_domain_and_variables_wiring PASSED
 tests/test_tools.py::test_verify_false_statement PASSED
 tests/test_tools.py::test_expression_simplification PASSED
 tests/test_tools.py::test_certified_factorization PASSED
+tests/test_tools.py::test_certified_factorization_without_certificates PASSED
 tests/test_tools.py::test_certified_factorization_prime PASSED
 tests/test_tools.py::test_elliptic_curve_analyzer PASSED
+tests/test_tools.py::test_elliptic_curve_analyzer_skip_torsion PASSED
 tests/test_tools.py::test_lean4_audit_with_sorry PASSED
 tests/test_tools.py::test_lean4_audit_complete_proof PASSED
-==================== 14 passed in 1.83s ====================
+tests/test_tools.py::test_lean4_audit_blocks_unsafe_directives PASSED
+tests/test_tools.py::test_safe_parse_blocks_injection PASSED
+==================== 21 passed in 1.85s ====================
 ```
 
 ---

@@ -223,13 +223,27 @@ def pollard_pm1(n: int, b1: int = 50000) -> int:
     return 0
 
 
-def factorize_integer(n: int) -> Dict[str, Any]:
+def factorize_integer(n: int, generate_certificates: bool = True) -> Dict[str, Any]:
     """
     4-Stage Werr Multi-Layer Algebraic Sieve Factorization.
     Decomposes integer n into completely certified prime factors.
     """
     if n == 0:
-        return {"n": 0, "factors": [], "certified": True}
+        return {
+            "n": 0,
+            "sign": 0,
+            "bit_length": 0,
+            "decimal_digits": 1,
+            "factors": [],
+            "factor_string": "0",
+            "certified": True,
+            "certificates": [] if generate_certificates else None,
+            "invariants": {
+                "euler_totient": 0,
+                "divisor_count": 0,
+                "sum_of_divisors": 0,
+            },
+        }
 
     sign = -1 if n < 0 else 1
     n = abs(n)
@@ -311,7 +325,8 @@ def factorize_integer(n: int) -> Dict[str, Any]:
 
     for p, exp in sorted_factors:
         isp, cert_type = is_certified_prime(p)
-        cert_details.append({"prime": p, "exponent": exp, "is_prime": isp, "cert": cert_type})
+        if generate_certificates:
+            cert_details.append({"prime": p, "exponent": exp, "is_prime": isp, "cert": cert_type})
         if not isp:
             certified = False
         totient *= (p ** (exp - 1)) * (p - 1)
@@ -324,9 +339,9 @@ def factorize_integer(n: int) -> Dict[str, Any]:
         "bit_length": original_n.bit_length(),
         "decimal_digits": len(str(original_n)),
         "factors": sorted_factors,
-        "factor_string": " * ".join(f"{p}^{e}" if e > 1 else str(p) for p, e in sorted_factors),
+        "factor_string": " * ".join(f"{p}^{e}" if e > 1 else str(p) for p, e in sorted_factors) if sorted_factors else "1",
         "certified": certified,
-        "certificates": cert_details,
+        "certificates": cert_details if generate_certificates else [],
         "invariants": {
             "euler_totient": totient,
             "divisor_count": divisor_count,
