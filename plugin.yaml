@@ -1,20 +1,35 @@
 name: verifiable-math-kernel
-version: "1.0.0"
+version: "1.0.1"
 description: >-
   Deterministic symbolic computation, certified integer factorization,
-  elliptic curve invariant analysis, and formal Lean 4 proof verification for Hermes Agent.
+  elliptic curve invariant analysis, and formal Lean 4 proof auditing for
+  Hermes Agent. When Lean 4 is installed on PATH, lean4_proof_audit optionally
+  validates proof syntax via local `lean --stdin` (with unsafe/IO directives
+  blocked).
+author: "Volkan Dagli"
 maintainer: pCwOrM
 tier: community
 category: tools
+license: "MIT"
+homepage: "https://github.com/pCwOrM/hermes-verifiable-math"
 requires_hermes: ">=0.21.0"
-platforms: []
-capabilities:
-  provides_tools:
-    - verify_math_claim
-    - certified_factorization
-    - elliptic_curve_analyzer
-    - lean4_proof_audit
-  provides_hooks:
-    - pre_tool_call
-    - post_tool_call
+platforms:
+  - linux
+  - macos
+  - windows
+provides_tools:
+  - verify_math_claim
+  - certified_factorization
+  - elliptic_curve_analyzer
+  - lean4_proof_audit
+provides_hooks:
+  - pre_tool_call
+  - post_tool_call
 requires_env: []
+config_schema:
+  enable_lean_cli:
+    type: bool
+    default: true
+    label: "Enable Local Lean 4 CLI Kernel Check"
+    description: "When true and `lean` is found on PATH, lean4_proof_audit pipes hole-free, IO-free snippets to `lean --stdin` for kernel verification."
+    required: false

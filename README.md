@@ -2,11 +2,11 @@
 
 > **Deterministic Symbolic Computation, Certified Factorization, Elliptic Curve Arithmetic, and Formal Lean 4 Proof Verification for [Hermes Agent](https://hermes-agent.nousresearch.com) (Nous Research).**
 
-[![Hermes Agent Plugin v2](https://img.shields.io/badge/Hermes%20Plugin-v2%20Compliant-blue.svg)](https://hermes-agent.nousresearch.com)
+[![Hermes Community Plugin](https://img.shields.io/badge/Hermes%20Plugin-Community-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 14 Passed](https://img.shields.io/badge/Tests-14%2F14%20Passed-brightgreen.svg)](#testing)
+[![Tests: 15 Passed](https://img.shields.io/badge/Tests-15%2F15%20Passed-brightgreen.svg)](#testing)
 [![Category: Tools](https://img.shields.io/badge/Category-Tools%20%26%20Reasoning-purple.svg)](plugin.yaml)
-[![Zero Hallucination](https://img.shields.io/badge/Zero--Hallucination-100%25%20Deterministic-blueviolet.svg)](#)
+[![arXiv:2611.11641](https://img.shields.io/badge/arXiv-2611.11641%20%5Bcs.LO%5D-b31b1b.svg)](https://arxiv.org/abs/2611.11641)
 [![NSF ICARM Verified](https://img.shields.io/badge/NSF--ICARM-Grant%20DMS--2425401-orange.svg)](https://icarm.io)
 
 ---
@@ -235,6 +235,7 @@ All monographs, formal Lean 4 specifications, and empirical datasets across the 
 | **13** | **Paper 13: GDT v3.0** | Machine-Certified Lean 4 Formalization of the General Divisor Theorem (v2) | [**`10.5281/zenodo.23316068`**](https://doi.org/10.5281/zenodo.23316068) | [`10.5281/zenodo.23425590`](https://doi.org/10.5281/zenodo.23425590) | **Lean 4 (`81 Theorems, 0 sorry`)** • Companion v1: [`10.5281/zenodo.23426323`](https://doi.org/10.5281/zenodo.23426323) ([`v1: 23426324`](https://doi.org/10.5281/zenodo.23426324)) | [`pCwOrM/general-divisor-theorem`](https://github.com/pCwOrM/general-divisor-theorem) |
 | **14** | **Paper 14: Elliptic Sieve** | Multi-Layer Algebraic Sieve & Vélu Isogeny Engine: 230 Curves on NSF ICARM (v1) | [**`10.5281/zenodo.23436282`**](https://doi.org/10.5281/zenodo.23436282) | [`10.5281/zenodo.23436283`](https://doi.org/10.5281/zenodo.23436283) | [**NSF ICARM Leaderboard (`user/114`)**](https://elliptic-rank.icarm.cloud/user/114): **30x #1 Gold Records**, 80 Top-3, 100% `log N` | [`pCwOrM/werr-elliptic-sieve`](https://github.com/pCwOrM/werr-elliptic-sieve) |
 | **15** | **Paper 15: Empirical OEV** | Empirical OEV & Liquidation Dynamics: Chainlink SVR on Base & Ethereum L1 (v2) | [**`10.5281/zenodo.23623588`**](https://doi.org/10.5281/zenodo.23623588) | [`10.5281/zenodo.23642090`](https://doi.org/10.5281/zenodo.23642090) | [🤗 HF Dataset (`1.16k+ views, 126 likes`)](https://huggingface.co/datasets/pCwOrM/werracle-oev-liquidation-dataset-2026) • 94.4% Aggregate / 98.3% Median SVR Recapture | [`pCwOrM/werracle`](https://github.com/pCwOrM/werracle) • [`pCwOrM/werrealm`](https://github.com/pCwOrM/werrealm) |
+| **16** | **Paper 16: Holomorphic Collatz** | Spectral Stability, Fatou Basin Contraction & Machine-Checked Multipliers in Holomorphic Collatz Dynamics (v1) | [**`10.5281/zenodo.24060393`**](https://doi.org/10.5281/zenodo.24060393) | [`10.5281/zenodo.24060394`](https://doi.org/10.5281/zenodo.24060394) | [`arXiv:2611.11641 [cs.LO]`](https://arxiv.org/abs/2611.11641) • **Lean 4 (`20 Theorems, 0 sorry, 0 axioms`)** • $\mu_f(\mathcal{O}_{1,2}) = 3/4$ | [`pCwOrM/werr`](https://github.com/pCwOrM/werr) • [`pCwOrM/hermes-verifiable-math`](https://github.com/pCwOrM/hermes-verifiable-math) |
 | **HW** | **Edge Robotics Core** | Zero-Memory Embedded C/C++11 System-1 Reflex Kernel (`WerrCoreEdge.h` v0.5.1) | [**`10.5281/zenodo.22867425`**](https://doi.org/10.5281/zenodo.22867425) | [`10.5281/zenodo.22939253`](https://doi.org/10.5281/zenodo.22939253) | ATmega328P / ESP32 / STM32 (`0 Bytes Heap`, `<128B Stack`, `TR 2026/016633`) | [`pCwOrM/WERRobotics`](https://github.com/pCwOrM/WERRobotics) |
 
 

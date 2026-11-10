@@ -4,11 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hermes-verifiable-math"
-version = "1.0.0"
-description = "Deterministic symbolic computation, certified integer factorization, elliptic curve invariant analysis, and formal Lean 4 proof verification for Hermes Agent."
+version = "1.0.1"
+description = "Deterministic symbolic computation, certified integer factorization, elliptic curve invariant analysis, and formal Lean 4 proof auditing for Hermes Agent."
 readme = "README.md"
-authors = [{ name = "Volkan Dağlı (pCwOrM)", email = "pcworm@pcworm.net" }]
+authors = [{ name = "Volkan Dagli" }]
 license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "sympy>=1.12",
+    "mpmath>=1.3.0",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -39,17 +44,13 @@ keywords = [
 Homepage = "https://github.com/pCwOrM/hermes-verifiable-math"
 Documentation = "https://github.com/pCwOrM/hermes-verifiable-math#readme"
 "Hermes Agent" = "https://hermes-agent.nousresearch.com"
-"CERN Zenodo Archive" = "https://doi.org/10.5281/zenodo.23436282"
-requires-python = ">=3.10"
-dependencies = [
-    "sympy>=1.12",
-    "mpmath>=1.3.0",
-    "pyyaml>=6.0",
-]
+"arXiv Preprint (Collatz Lean 4)" = "https://arxiv.org/abs/2611.11641"
+"CERN Zenodo Archive" = "https://doi.org/10.5281/zenodo.24060394"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "pyyaml>=6.0",
 ]
 
 [tool.pytest.ini_options]

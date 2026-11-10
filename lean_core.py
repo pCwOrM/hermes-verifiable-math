@@ -1,13 +1,27 @@
 """
 Lean 4 Formal Proof Auditor & Theorem Verification Core.
 Inspects Lean 4 code snippets, verifies tactic completeness, detects unproven holes (sorry),
-and interfaces with the Lean 4 kernel if available.
+and optionally interfaces with the local Lean 4 kernel (`lean --stdin`) when enabled and safe.
 """
 
 import re
 import shutil
 import subprocess
-from typing import Dict, List, Any
+from typing import Dict, Any, Optional
+
+_ENABLE_LEAN_CLI: bool = True
+
+# Block Lean metaprogramming / IO / FFI directives before invoking `lean --stdin`
+_UNSAFE_LEAN_DIRECTIVES = re.compile(
+    r"(#eval\b|#reduce\b|System\.Process|IO\.FS|IO\.Process|@\[extern|@\[implemented_by|\bunsafe\b|\binitialize\b)"
+)
+
+
+def configure_runtime(enable_lean_cli: Optional[bool] = None) -> None:
+    """Configure runtime options from Hermes plugin config."""
+    global _ENABLE_LEAN_CLI
+    if enable_lean_cli is not None:
+        _ENABLE_LEAN_CLI = bool(enable_lean_cli)
 
 
 def audit_lean4_code(code: str) -> Dict[str, Any]:
@@ -50,15 +64,18 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
     for match in axiom_pattern.finditer(code):
         axioms.append(match.group(2))
 
-    # 4. Check if Lean 4 is installed on PATH
-    lean_bin = shutil.which("lean") or shutil.which("lake")
+    # 4. Check for unsafe/IO directives before running local Lean 4 CLI
+    unsafe_match = _UNSAFE_LEAN_DIRECTIVES.search(code)
+    lean_bin = shutil.which("lean") if _ENABLE_LEAN_CLI else None
     compiler_verified = False
     compiler_output = ""
 
-    if lean_bin and not holes:
+    if unsafe_match:
+        compiler_output = f"Skipped local Lean CLI check: disallowed directive '{unsafe_match.group(1)}'."
+    elif lean_bin and not holes:
         try:
             res = subprocess.run(
-                ["lean", "--stdin"],
+                [lean_bin, "--stdin"],
                 input=code,
                 text=True,
                 capture_output=True,

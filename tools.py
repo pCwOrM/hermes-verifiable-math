@@ -5,14 +5,85 @@ Implements exact symbolic mathematics, factorization, elliptic curve analysis, a
 
 import hashlib
 import json
-from typing import Dict, Any, List
+import re
+from typing import Dict, Any
 
 import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application,
+    convert_xor,
+)
 
-import sieve_core
-import elliptic_core
-import lean_core
+try:
+    from . import sieve_core, elliptic_core, lean_core
+except (ImportError, ValueError):
+    import sieve_core, elliptic_core, lean_core
+
+# Safe mathematical globals for SymPy expression parsing (no builtins)
+_SAFE_SYMPY_GLOBALS: Dict[str, Any] = {
+    "__builtins__": {},
+    "Integer": sp.Integer,
+    "Rational": sp.Rational,
+    "Float": sp.Float,
+    "Symbol": sp.Symbol,
+    "pi": sp.pi,
+    "E": sp.E,
+    "I": sp.I,
+    "oo": sp.oo,
+    "sin": sp.sin,
+    "cos": sp.cos,
+    "tan": sp.tan,
+    "cot": sp.cot,
+    "sec": sp.sec,
+    "csc": sp.csc,
+    "asin": sp.asin,
+    "acos": sp.acos,
+    "atan": sp.atan,
+    "sinh": sp.sinh,
+    "cosh": sp.cosh,
+    "tanh": sp.tanh,
+    "exp": sp.exp,
+    "log": sp.log,
+    "ln": sp.ln,
+    "sqrt": sp.sqrt,
+    "Abs": sp.Abs,
+    "abs": sp.Abs,
+    "factorial": sp.factorial,
+    "binomial": sp.binomial,
+    "gcd": sp.gcd,
+    "lcm": sp.lcm,
+}
+
+_UNSAFE_EXPR_PATTERN = re.compile(r"(__|import|eval|exec|open|getattr|setattr|delattr|globals|locals|lambda|\[|\]|\{|\}|\"|\'|;)")
+
+
+def _safe_parse_expr(expr_str: str) -> sp.Expr:
+    """Safely parse a mathematical expression without exposing Python builtins or attribute access."""
+    cleaned = expr_str.strip()
+    if len(cleaned) > 1000:
+        raise ValueError("Expression exceeds maximum length (1000 chars).")
+    if _UNSAFE_EXPR_PATTERN.search(cleaned):
+        raise ValueError("Expression contains disallowed tokens.")
+    # Reject attribute access (dots not flanked by digits)
+    if re.search(r"(?<![0-9])\.|\.(?![0-9])", cleaned):
+        raise ValueError("Attribute access is not permitted in mathematical expressions.")
+
+    transformations = standard_transformations + (implicit_multiplication_application, convert_xor)
+    # Pre-populate single-letter and standard identifier symbols in local_dict
+    local_dict: Dict[str, Any] = {}
+    for ident in re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", cleaned):
+        if ident not in _SAFE_SYMPY_GLOBALS:
+            local_dict[ident] = sp.Symbol(ident)
+
+    return parse_expr(
+        cleaned,
+        local_dict=local_dict,
+        global_dict=dict(_SAFE_SYMPY_GLOBALS),
+        transformations=transformations,
+        evaluate=True,
+    )
 
 
 def verify_math_claim_handler(args: Dict[str, Any]) -> str:
@@ -24,14 +95,12 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
         return json.dumps({"error": "No statement provided."}, indent=2)
 
     try:
-        transformations = standard_transformations + (implicit_multiplication_application,)
-
         # Check for equality statement
         if "==" in statement or "=" in statement:
             delim = "==" if "==" in statement else "="
             parts = statement.split(delim, 1)
-            lhs_expr = parse_expr(parts[0].strip(), transformations=transformations)
-            rhs_expr = parse_expr(parts[1].strip(), transformations=transformations)
+            lhs_expr = _safe_parse_expr(parts[0])
+            rhs_expr = _safe_parse_expr(parts[1])
 
             diff = sp.simplify(lhs_expr - rhs_expr)
             is_zero = diff.is_zero
@@ -52,7 +121,7 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
             }
         else:
             # Single expression simplification / evaluation
-            expr = parse_expr(statement, transformations=transformations)
+            expr = _safe_parse_expr(statement)
             simplified = sp.simplify(expr)
             factored = sp.factor(expr)
             expanded = sp.expand(expr)
@@ -134,7 +203,7 @@ def math_cli_status(args_str: str = "") -> str:
     """
     if not args_str.strip():
         return (
-            "Hermes Verifiable Math Kernel [v1.0.0]\n"
+            "Hermes Verifiable Math Kernel [v1.0.1]\n"
             "Engine: SymPy CAS + Werr Multi-Layer Sieve + Baillie-PSW + Lean 4\n"
             "Usage: /verify <math_expression_or_equality>"
         )

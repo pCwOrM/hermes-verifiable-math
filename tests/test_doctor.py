@@ -37,11 +37,12 @@ def test_manifest_structure():
     assert manifest["name"] == "verifiable-math-kernel"
     assert manifest["maintainer"] == "pCwOrM"
     assert manifest["category"] == "tools"
-    assert "pre_tool_call" in manifest["capabilities"]["provides_hooks"]
-    assert "verify_math_claim" in manifest["capabilities"]["provides_tools"]
-    assert "certified_factorization" in manifest["capabilities"]["provides_tools"]
-    assert "elliptic_curve_analyzer" in manifest["capabilities"]["provides_tools"]
-    assert "lean4_proof_audit" in manifest["capabilities"]["provides_tools"]
+    assert "pre_tool_call" in manifest["provides_hooks"]
+    assert "verify_math_claim" in manifest["provides_tools"]
+    assert "certified_factorization" in manifest["provides_tools"]
+    assert "elliptic_curve_analyzer" in manifest["provides_tools"]
+    assert "lean4_proof_audit" in manifest["provides_tools"]
+    assert manifest["requires_env"] == []
 
 
 def test_register_context_wiring():

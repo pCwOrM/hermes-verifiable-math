@@ -87,3 +87,10 @@ def test_lean4_audit_complete_proof():
     assert data["certified"] is True
     assert data["unproven_holes_count"] == 0
     assert data["theorems_found"] == 1
+
+
+def test_safe_parse_blocks_injection():
+    res_str = tools.verify_math_claim_handler({"statement": "__import__('os').system('echo pwn')"})
+    data = json.loads(res_str)
+    assert "error" in data
+

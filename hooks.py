@@ -6,19 +6,25 @@ Floating-point precision safety guard and cryptographic proof telemetry.
 import hashlib
 import json
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
-def math_pre_execution_guard(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+def math_pre_execution_guard(
+    tool_name: str = "",
+    args: Optional[Dict[str, Any]] = None,
+    task_id: Optional[str] = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """
     Pre-tool execution hook:
     Inspects tool arguments for risky floating-point precision traps (e.g., 0.1 + 0.2)
     or large integer conversions, preventing catastrophic round-off hallucinations.
     """
     warning = None
+    safe_args = args if isinstance(args, dict) else {}
 
     # Inspect string representations of arguments
-    args_str = json.dumps(args)
+    args_str = json.dumps(safe_args, default=str)
 
     # Detect IEEE-754 precision trap: e.g. 0.1 + 0.2 or float decimals in exact math
     float_pattern = re.compile(r"\b0\.[0-9]{1,4}\s*[\+\-\*\/]\s*0\.[0-9]{1,4}\b")
@@ -43,7 +49,13 @@ def math_pre_execution_guard(tool_name: str, args: Dict[str, Any]) -> Dict[str, 
     }
 
 
-def math_post_execution_verifier(tool_name: str, result: Any) -> Dict[str, Any]:
+def math_post_execution_verifier(
+    tool_name: str = "",
+    result: Any = None,
+    args: Optional[Dict[str, Any]] = None,
+    task_id: Optional[str] = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """
     Post-tool execution hook:
     Attaches deterministic cryptographic verification telemetry and hashes.
@@ -52,6 +64,6 @@ def math_post_execution_verifier(tool_name: str, result: Any) -> Dict[str, Any]:
     cert_hash = hashlib.sha256(result_str.encode("utf-8")).hexdigest()[:16]
 
     return {
-        "verified_by": "Hermes-Verifiable-Math-v1.0",
+        "verified_by": "Hermes-Verifiable-Math-v1.0.1",
         "proof_stamp": f"[VERIFIED-MATH-PROOF-v1:{cert_hash}]",
     }
