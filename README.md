@@ -214,7 +214,7 @@ tests/test_tools.py::test_safe_parse_blocks_injection PASSED
 
 This plugin is part of the **Werr Open Science Ecosystem** and builds directly upon methodologies verified on the **NSF Institute for Computer-Aided Reasoning in Mathematics (ICARM)** Elliptic Curve Rank Leaderboard under **U.S. National Science Foundation Grant DMS-2425401** and CERN Zenodo permanent research archives ([DOI: 10.5281/zenodo.23436282](https://doi.org/10.5281/zenodo.23436282)).
 
-* **Author:** Volkan Dağlı ([@pCwOrM](https://github.com/pCwOrM))
+* **Author:** Volkan Dagli ([@pCwOrM](https://github.com/pCwOrM))
 * **Organization:** ITouch Systems Research & Development
 * **License:** [MIT License](LICENSE)
 
