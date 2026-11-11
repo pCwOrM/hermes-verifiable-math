@@ -29,12 +29,12 @@ CERTIFIED_FACTORIZATION_SCHEMA = {
     "properties": {
         "n": {
             "type": "integer",
-            "description": "Integer to decompose into certified prime factors.",
+            "description": "Integer to decompose into prime factors verified via Baillie-PSW probable-prime testing.",
         },
         "generate_certificates": {
             "type": "boolean",
             "default": True,
-            "description": "Whether to generate Baillie-PSW primality proof certificates for each factor.",
+            "description": "Whether to attach Baillie-PSW probable-prime test results for each factor.",
         },
     },
     "required": ["n"],
@@ -62,7 +62,7 @@ LEAN4_PROOF_AUDIT_SCHEMA = {
     "properties": {
         "lean_code": {
             "type": "string",
-            "description": "Lean 4 source code snippet containing theorem statements, tactics, or proofs to audit.",
+            "description": "Lean 4 source code snippet containing theorem statements, tactics, or proofs to audit for unproven holes (sorry) and formal soundness.",
         },
     },
     "required": ["lean_code"],

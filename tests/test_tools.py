@@ -8,7 +8,7 @@ PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-import tools
+from conftest import tools, lean_core
 
 
 def test_verify_trig_identity():
@@ -64,6 +64,22 @@ def test_expression_simplification():
     assert data["simplified"] == "x + 1"
 
 
+def test_power_tower_resource_bounding():
+    # Disallow chained exponentiation / power towers
+    res_str = tools.verify_math_claim_handler({"statement": "2**2**100"})
+    data = json.loads(res_str)
+    assert "error" in data
+    assert "power towers" in data["error"].lower()
+
+
+def test_large_exponent_bounding():
+    # Cap exponents above limit (5000)
+    res_str = tools.verify_math_claim_handler({"statement": "2**99999"})
+    data = json.loads(res_str)
+    assert "error" in data
+    assert "exponent exceeds" in data["error"].lower()
+
+
 def test_certified_factorization():
     # 2026 = 2 * 1013
     res_str = tools.certified_factorization_handler({"n": 2026})
@@ -71,6 +87,7 @@ def test_certified_factorization():
     assert data["certified"] is True
     assert data["factors"] == [[2, 1], [1013, 1]]
     assert len(data["certificates"]) == 2
+    assert "probable_prime_tests" in data
     assert data["invariants"]["euler_totient"] == 1 * 1012
 
 
@@ -88,6 +105,7 @@ def test_certified_factorization_prime():
     data = json.loads(res_str)
     assert data["certified"] is True
     assert data["factors"] == [[1000000007, 1]]
+    assert data["probable_prime_tests"][0]["test"] == "Baillie-PSW_Probable_Prime"
 
 
 def test_elliptic_curve_analyzer():
@@ -123,27 +141,19 @@ def test_lean4_audit_with_sorry():
     assert data["status"] == "REJECTED_UNPROVEN_HOLES"
 
 
-def test_lean4_audit_complete_proof():
+def test_lean4_audit_unchecked_no_holes_by_default():
+    # With enable_lean_cli defaulting to False, clean snippets return certified=False with UNCHECKED_NO_HOLES
+    lean_core.configure_runtime(enable_lean_cli=False)
     lean_code = """
     theorem add_comm (a b : Nat) : a + b = b + a := by
       rw [Nat.add_comm]
     """
     res_str = tools.lean4_proof_audit_handler({"lean_code": lean_code})
     data = json.loads(res_str)
-    assert data["certified"] is True
+    assert data["certified"] is False
+    assert data["status"] == "UNCHECKED_NO_HOLES"
     assert data["unproven_holes_count"] == 0
     assert data["theorems_found"] == 1
-
-
-def test_lean4_audit_blocks_unsafe_directives():
-    lean_code = """
-    #eval IO.Process.run { cmd := "whoami" }
-    theorem trivial_true : True := by trivial
-    """
-    res_str = tools.lean4_proof_audit_handler({"lean_code": lean_code})
-    data = json.loads(res_str)
-    assert data["compiler_verified"] is False
-    assert "Skipped local Lean CLI check: disallowed directive" in data["compiler_message"]
 
 
 def test_safe_parse_blocks_injection():

@@ -80,6 +80,6 @@ def math_post_execution_verifier(
     cert_hash = hashlib.sha256(result_str.encode("utf-8")).hexdigest()[:16]
 
     return {
-        "verified_by": "Hermes-Verifiable-Math-v1.0.2",
+        "verified_by": "Hermes-Verifiable-Math-v1.0.3",
         "proof_stamp": f"[VERIFIED-MATH-PROOF-v1:{cert_hash}]",
     }

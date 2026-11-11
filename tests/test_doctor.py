@@ -8,7 +8,7 @@ PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-import __init__ as plugin_module
+from conftest import plugin_module
 
 
 class MockHermesContext:
@@ -17,14 +17,14 @@ class MockHermesContext:
         self.tools = {}
         self.commands = {}
 
-    def register_hook(self, event_name, callback):
-        self.hooks[event_name] = callback
+    def register_hook(self, event, handler, **kwargs):
+        self.hooks[event] = handler
 
-    def register_tool(self, name, toolset, schema, handler):
-        self.tools[name] = {"toolset": toolset, "schema": schema, "handler": handler}
+    def register_tool(self, name, handler=None, **kwargs):
+        self.tools[name] = {"handler": handler, **kwargs}
 
-    def register_command(self, cmd_name, callback):
-        self.commands[cmd_name] = callback
+    def register_command(self, name, handler, **kwargs):
+        self.commands[name] = handler
 
 
 def test_manifest_structure():
@@ -35,6 +35,7 @@ def test_manifest_structure():
         manifest = yaml.safe_load(f)
 
     assert manifest["name"] == "verifiable-math-kernel"
+    assert manifest["version"] == "1.0.3"
     assert manifest["maintainer"] == "pCwOrM"
     assert manifest["category"] == "tools"
     assert "pre_tool_call" in manifest["provides_hooks"]
@@ -43,6 +44,7 @@ def test_manifest_structure():
     assert "elliptic_curve_analyzer" in manifest["provides_tools"]
     assert "lean4_proof_audit" in manifest["provides_tools"]
     assert manifest["requires_env"] == []
+    assert manifest["config_schema"]["enable_lean_cli"]["default"] is False
 
 
 def test_register_context_wiring():
@@ -60,5 +62,5 @@ def test_register_context_wiring():
     assert "lean4_proof_audit" in ctx.tools
 
     # Verify command registered
-    assert "/verify" in ctx.commands
-    assert "/math" in ctx.commands
+    assert "verify" in ctx.commands
+    assert "math" in ctx.commands

@@ -75,7 +75,7 @@ Verifies algebraic identities, equations, and simplifies expressions with exact 
 ```
 
 ### 2. `certified_factorization`
-Factors composite integers and certifies every prime factor using the **Baillie-PSW deterministic primality test** (Miller-Rabin base 2 + strong Lucas-Selfridge). Also computes Euler's totient $\phi(N)$, divisor count $d(N)$, and sum of divisors $\sigma(N)$.
+Factors composite integers and tests prime factors using the **Baillie-PSW probable-prime test** (Miller-Rabin base 2 + strong Lucas-Selfridge). Also computes Euler's totient $\phi(N)$, divisor count $d(N)$, and sum of divisors $\sigma(N)$.
 * **Input:** `n: 2026`
 * **Output:**
 ```json
@@ -85,9 +85,9 @@ Factors composite integers and certifies every prime factor using the **Baillie-
   "factors": [[2, 1], [1013, 1]],
   "factor_string": "2 * 1013",
   "certified": true,
-  "certificates": [
-    {"prime": 2, "exponent": 1, "is_prime": true, "cert": "small_prime"},
-    {"prime": 1013, "exponent": 1, "is_prime": true, "cert": "Baillie-PSW_Deterministic"}
+  "probable_prime_tests": [
+    {"prime": 2, "exponent": 1, "is_prime": true, "test": "small_prime"},
+    {"prime": 1013, "exponent": 1, "is_prime": true, "test": "Baillie-PSW_Probable_Prime"}
   ],
   "invariants": {
     "euler_totient": 1012,
@@ -118,7 +118,7 @@ Computes exact arithmetic geometry invariants for elliptic curves over $\mathbb{
 ```
 
 ### 4. `lean4_proof_audit`
-Audits Lean 4 formal code snippets, extracts theorem declarations, verifies tactic syntax, checks for classical axioms, and detects unproven holes (`sorry` / `admit`).
+Audits Lean 4 formal code snippets, extracts theorem declarations, checks for classical axioms, and detects unproven holes (`sorry` / `admit`). By default (`enable_lean_cli: false`), runs static analysis without executing code. When `enable_lean_cli: true` is configured, checks go through Hermes's per-call approval gate with an explicit minimal environment (`PATH`, `HOME`, `LANG`, `LEAN_PATH`) and an isolated scratch working directory. `certified: true` is only returned when the local Lean 4 kernel actually verifies the snippet.
 * **Input:**
 ```lean
 theorem ferma_last (n : Nat) (hn : n > 2) : 

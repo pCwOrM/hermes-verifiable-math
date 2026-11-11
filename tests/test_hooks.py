@@ -7,7 +7,7 @@ PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
-import hooks
+from conftest import hooks
 
 
 def test_pre_hook_precision_trap_detection():
@@ -36,5 +36,5 @@ def test_pre_hook_clean_call():
 
 def test_post_hook_proof_stamp():
     res = hooks.math_post_execution_verifier("verify_math_claim", {"verified": True}, task_id="t1")
-    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.2"
+    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.3"
     assert res["proof_stamp"].startswith("[VERIFIED-MATH-PROOF-v1:")

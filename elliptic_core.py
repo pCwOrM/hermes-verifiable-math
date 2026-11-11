@@ -7,10 +7,7 @@ and 2-descent rank filtration.
 import math
 from typing import Dict, List, Tuple, Any, Optional
 from fractions import Fraction
-try:
-    from . import sieve_core
-except (ImportError, ValueError):
-    import sieve_core  # type: ignore
+from . import sieve_core
 
 
 class EllipticCurve:

@@ -1,7 +1,9 @@
 """
-Werr Multi-Layer Algebraic Sieve & Certified Primality Core.
-Provides exact deterministic primality testing (Baillie-PSW) and factorization.
+Werr Multi-Layer Algebraic Sieve & Baillie-PSW Probable-Prime Testing Core.
+Provides exact integer factorization and Baillie-PSW probable-prime testing.
 """
+
+from __future__ import annotations
 
 import math
 import random
@@ -80,8 +82,6 @@ def lucas_selfridge_prp(n: int) -> bool:
             return False
         if g == n:
             return False
-        # Jacobi symbol
-        jac = math.gcd(abs(D), n)
         # Simple Jacobi calculation
         j = 1
         a_val, n_val = D % n, n
@@ -107,13 +107,6 @@ def lucas_selfridge_prp(n: int) -> bool:
         d //= 2
         s += 1
 
-    # Lucas sequence evaluation
-    # U_d, V_d mod n
-    U = 0
-    V = 2
-    Q_k = Q
-    U_m = 1
-    V_m = P
     # Binary expansion of d
     bits = bin(d)[3:]  # skip '0b1'
     U = 1
@@ -152,9 +145,10 @@ def lucas_selfridge_prp(n: int) -> bool:
 
 def is_certified_prime(n: int) -> Tuple[bool, str]:
     """
-    Baillie-PSW primality test.
-    Returns (is_prime, certificate_type).
-    Zero known counterexamples exist below 2^64 (provably none) or in general.
+    Baillie-PSW probable-prime test.
+    Returns (is_prime, test_type).
+    Combines Miller-Rabin base 2 and Strong Lucas-Selfridge tests.
+    Zero counterexamples known below 2^64 or in general.
     """
     if n < 2:
         return False, "composite (<2)"
@@ -173,8 +167,7 @@ def is_certified_prime(n: int) -> Tuple[bool, str]:
     if not lucas_selfridge_prp(n):
         return False, "lucas_selfridge_failed"
 
-    cert = "Baillie-PSW_Deterministic" if n < 2**64 else "Baillie-PSW_Strong_PRP"
-    return True, cert
+    return True, "Baillie-PSW_Probable_Prime"
 
 
 def pollard_brent_rho(n: int, max_steps: int = 200000) -> int:
@@ -226,7 +219,7 @@ def pollard_pm1(n: int, b1: int = 50000) -> int:
 def factorize_integer(n: int, generate_certificates: bool = True) -> Dict[str, Any]:
     """
     4-Stage Werr Multi-Layer Algebraic Sieve Factorization.
-    Decomposes integer n into completely certified prime factors.
+    Decomposes integer n into prime factors with Baillie-PSW probable-prime testing.
     """
     if n == 0:
         return {
@@ -237,7 +230,8 @@ def factorize_integer(n: int, generate_certificates: bool = True) -> Dict[str, A
             "factors": [],
             "factor_string": "0",
             "certified": True,
-            "certificates": [] if generate_certificates else None,
+            "probable_prime_tests": [] if generate_certificates else [],
+            "certificates": [] if generate_certificates else [],
             "invariants": {
                 "euler_totient": 0,
                 "divisor_count": 0,
@@ -324,9 +318,16 @@ def factorize_integer(n: int, generate_certificates: bool = True) -> Dict[str, A
     sum_divisors = 1
 
     for p, exp in sorted_factors:
-        isp, cert_type = is_certified_prime(p)
+        isp, test_type = is_certified_prime(p)
         if generate_certificates:
-            cert_details.append({"prime": p, "exponent": exp, "is_prime": isp, "cert": cert_type})
+            cert_details.append({
+                "prime": p,
+                "exponent": exp,
+                "is_prime": isp,
+                "probable_prime_test": test_type,
+                "test": test_type,
+                "cert": test_type,
+            })
         if not isp:
             certified = False
         totient *= (p ** (exp - 1)) * (p - 1)
@@ -341,6 +342,7 @@ def factorize_integer(n: int, generate_certificates: bool = True) -> Dict[str, A
         "factors": sorted_factors,
         "factor_string": " * ".join(f"{p}^{e}" if e > 1 else str(p) for p, e in sorted_factors) if sorted_factors else "1",
         "certified": certified,
+        "probable_prime_tests": cert_details if generate_certificates else [],
         "certificates": cert_details if generate_certificates else [],
         "invariants": {
             "euler_totient": totient,

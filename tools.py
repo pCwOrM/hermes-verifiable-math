@@ -3,6 +3,9 @@ Tool handlers for Hermes Verifiable Math.
 Implements exact symbolic mathematics, factorization, elliptic curve analysis, and Lean 4 auditing.
 """
 
+from __future__ import annotations
+
+import concurrent.futures
 import hashlib
 import json
 import re
@@ -17,12 +20,7 @@ from sympy.parsing.sympy_parser import (
     rationalize,
 )
 
-try:
-    from . import sieve_core, elliptic_core, lean_core
-except (ImportError, ValueError):
-    import sieve_core  # type: ignore
-    import elliptic_core  # type: ignore
-    import lean_core  # type: ignore
+from . import sieve_core, elliptic_core, lean_core
 
 # Safe mathematical globals for SymPy expression parsing (no builtins)
 _SAFE_SYMPY_GLOBALS: Dict[str, Any] = {
@@ -84,6 +82,13 @@ def _safe_parse_expr(
     if re.search(r"(?<![0-9])\.|\.(?![0-9])", cleaned):
         raise ValueError("Attribute access is not permitted in mathematical expressions.")
 
+    # Bound work: disallow chained exponentiation (power towers) and cap large integer exponents
+    if re.search(r"(?:\*\*|\^)\s*[\w\(\)]+\s*(?:\*\*|\^)", cleaned):
+        raise ValueError("Chained exponentiation (power towers) is disallowed to prevent resource exhaustion.")
+    for exp_match in re.finditer(r"(?:\*\*|\^)\s*([0-9]+)", cleaned):
+        if int(exp_match.group(1)) > 5000:
+            raise ValueError("Exponent exceeds maximum allowed limit (5000).")
+
     norm_domain = domain if domain in _DOMAIN_ASSUMPTIONS else "real"
     assumptions = _DOMAIN_ASSUMPTIONS[norm_domain]
 
@@ -103,13 +108,19 @@ def _safe_parse_expr(
         if ident not in _SAFE_SYMPY_GLOBALS and ident not in local_dict:
             local_dict[ident] = sp.Symbol(ident, **assumptions)
 
-    return parse_expr(
-        cleaned,
-        local_dict=local_dict,
-        global_dict=dict(_SAFE_SYMPY_GLOBALS),
-        transformations=transformations,
-        evaluate=True,
-    )
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            parse_expr,
+            cleaned,
+            local_dict=local_dict,
+            global_dict=dict(_SAFE_SYMPY_GLOBALS),
+            transformations=transformations,
+            evaluate=True,
+        )
+        try:
+            return future.result(timeout=5.0)
+        except concurrent.futures.TimeoutError:
+            raise TimeoutError("Expression evaluation timed out (5.0s computation limit exceeded).")
 
 
 def verify_math_claim_handler(args: Dict[str, Any]) -> str:
@@ -134,27 +145,27 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
             rhs_expr = _safe_parse_expr(parts[1], domain=domain, variables=var_list)
 
             diff = sp.simplify(lhs_expr - rhs_expr)
-            is_zero = diff.is_zero
-            if is_zero is None or is_zero is False:
-                # Try trigsimp, expand, factor
-                diff_alt = sp.trigsimp(sp.expand(diff))
-                if diff_alt == 0 or getattr(diff_alt, "is_zero", False):
-                    diff = sp.Integer(0)
-                    is_zero = True
-                else:
-                    is_zero = (diff == 0)
+            is_identical = bool(diff == 0)
 
-            free_syms = sorted(str(s) for s in (lhs_expr.free_symbols | rhs_expr.free_symbols))
+            # Collect free variables
+            all_free = sorted(str(s) for s in (lhs_expr.free_symbols | rhs_expr.free_symbols))
+
+            proof_trace = (
+                f"1. Parsed LHS: {lhs_expr}\n"
+                f"2. Parsed RHS: {rhs_expr}\n"
+                f"3. Difference canonical form: {diff}\n"
+                f"4. Identity holds identically: {is_identical}"
+            )
+
             result = {
-                "statement": statement,
+                "verified": is_identical,
                 "domain": domain,
-                "free_symbols": free_syms,
-                "verified": bool(is_zero),
+                "statement": statement,
+                "free_symbols": all_free,
+                "difference_canonical": str(diff),
+                "proof_trace": proof_trace,
                 "lhs_canonical": str(lhs_expr),
                 "rhs_canonical": str(rhs_expr),
-                "difference_canonical": str(diff),
-                "proof_trace": "LHS - RHS evaluated to 0 identically." if is_zero else f"Non-zero residue: {str(diff)}",
-                "latex": f"{sp.latex(lhs_expr)} = {sp.latex(rhs_expr)}",
                 "verification_hash": hashlib.sha256(statement.encode("utf-8")).hexdigest()[:16],
             }
         else:
@@ -186,7 +197,7 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
 
 def certified_factorization_handler(args: Dict[str, Any]) -> str:
     """
-    Factors integer n and produces Baillie-PSW primality proof certificates.
+    Factors integer n and performs Baillie-PSW probable-prime testing.
     """
     n = args.get("n")
     if n is None:
@@ -251,8 +262,18 @@ def math_cli_status(args_str: str = "") -> str:
     """
     if not args_str.strip():
         return (
-            "Hermes Verifiable Math Kernel [v1.0.2]\n"
+            "Hermes Verifiable Math Kernel [v1.0.3]\n"
             "Engine: SymPy CAS + Werr Multi-Layer Sieve + Baillie-PSW + Lean 4\n"
             "Usage: /verify <math_expression_or_equality>"
         )
     return verify_math_claim_handler({"statement": args_str.strip()})
+
+
+def slash_verify_handler(args_str: str = "") -> str:
+    """Handler for /verify slash command."""
+    return math_cli_status(args_str)
+
+
+def slash_math_handler(args_str: str = "") -> str:
+    """Handler for /math slash command."""
+    return math_cli_status(args_str)

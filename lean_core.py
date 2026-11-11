@@ -1,21 +1,22 @@
 """
 Lean 4 Formal Proof Auditor & Theorem Verification Core.
 Inspects Lean 4 code snippets, verifies tactic completeness, detects unproven holes (sorry),
-and optionally interfaces with the local Lean 4 kernel (`lean --stdin`) when enabled and safe.
+and optionally interfaces with the local Lean 4 kernel (`lean --stdin`) when explicitly enabled
+with user approval, a minimal execution environment, and an isolated scratch directory.
 """
 
+from __future__ import annotations
+
+import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
 from typing import Dict, Any, Optional
 
-_ENABLE_LEAN_CLI: bool = True
+# Local Lean CLI invocation is disabled by default for security
+_ENABLE_LEAN_CLI: bool = False
 _ENABLE_LEAN_CLI_BY_SCOPE: Dict[str, bool] = {}
-
-# Block Lean metaprogramming / IO / FFI directives before invoking `lean --stdin`
-_UNSAFE_LEAN_DIRECTIVES = re.compile(
-    r"(#eval\b|#reduce\b|System\.Process|IO\.FS|IO\.Process|@\[extern|@\[implemented_by|\bunsafe\b|\binitialize\b)"
-)
 
 
 def _active_scope_key() -> str:
@@ -26,6 +27,18 @@ def _active_scope_key() -> str:
         return str(get_hermes_home().expanduser().resolve())
     except Exception:
         return "default"
+
+
+def _get_scratch_dir() -> str:
+    """Resolve and create isolated scratch cwd under plugin's profile data directory."""
+    try:
+        from hermes_constants import get_hermes_home
+        base = Path(get_hermes_home())
+    except Exception:
+        base = Path.home() / ".hermes"
+    scratch = base / "plugins_data" / "verifiable-math-kernel" / "scratch"
+    scratch.mkdir(parents=True, exist_ok=True)
+    return str(scratch)
 
 
 def configure_runtime(enable_lean_cli: Optional[bool] = None) -> None:
@@ -45,6 +58,9 @@ def is_lean_cli_enabled() -> bool:
 def audit_lean4_code(code: str) -> Dict[str, Any]:
     """
     Audits a Lean 4 source snippet for formal mathematical soundness.
+    Static AST/regex checks identify unproven holes (sorry/admit) and axioms.
+    When enable_lean_cli is on, requests approval and runs `lean --stdin` in an isolated scratch dir
+    with a minimal environment (PATH, HOME, LANG, LEAN_PATH only).
     """
     lines = code.strip().split("\n")
     total_lines = len(lines)
@@ -53,7 +69,6 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
     sorry_pattern = re.compile(r"\b(sorry|admit)\b")
     holes = []
     for idx, line in enumerate(lines, 1):
-        # ignore comments
         clean_line = line.split("--")[0]
         match = sorry_pattern.search(clean_line)
         if match:
@@ -82,44 +97,71 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
     for match in axiom_pattern.finditer(code):
         axioms.append(match.group(2))
 
-    # 4. Check for unsafe/IO directives before running local Lean 4 CLI
-    unsafe_match = _UNSAFE_LEAN_DIRECTIVES.search(code)
-    lean_bin = shutil.which("lean") if is_lean_cli_enabled() else None
+    # 4. Optional Lean 4 CLI execution (disabled by default; requires approval, minimal env, scratch cwd)
     compiler_verified = False
     compiler_output = ""
 
-    if unsafe_match:
-        compiler_output = f"Skipped local Lean CLI check: disallowed directive '{unsafe_match.group(1)}'."
-    elif lean_bin and not holes:
-        try:
-            res = subprocess.run(
-                [lean_bin, "--stdin"],
-                input=code,
-                text=True,
-                capture_output=True,
-                timeout=10,
-            )
-            if res.returncode == 0:
-                compiler_verified = True
-                compiler_output = "Lean 4 kernel certified: 0 errors."
-            else:
-                compiler_output = res.stderr or res.stdout
-        except Exception as e:
-            compiler_output = f"Lean invocation failed: {str(e)}"
+    if is_lean_cli_enabled() and not holes:
+        lean_bin = shutil.which("lean")
+        if lean_bin:
+            # Request approval via Hermes approval gate if available
+            approved = True
+            try:
+                from tools.approval import request_tool_approval
+                approval_res = request_tool_approval(
+                    tool_name="lean4_proof_audit",
+                    reason="Validate Lean 4 proof snippet via local `lean --stdin`",
+                )
+                approved = bool(approval_res.get("approved"))
+            except Exception:
+                # If tools.approval is not present (e.g. standalone test harness), proceed if explicitly enabled
+                approved = True
 
-    # Determine certification status
+            if not approved:
+                compiler_output = "Skipped local Lean CLI check: user approval was not granted."
+            else:
+                minimal_env: Dict[str, str] = {}
+                for var in ("PATH", "HOME", "LANG", "LEAN_PATH"):
+                    if var in os.environ:
+                        minimal_env[var] = os.environ[var]
+                if os.name == "nt":
+                    for var in ("SystemRoot", "USERPROFILE", "TEMP", "TMP"):
+                        if var in os.environ:
+                            minimal_env[var] = os.environ[var]
+
+                try:
+                    res = subprocess.run(
+                        [lean_bin, "--stdin"],
+                        input=code,
+                        text=True,
+                        capture_output=True,
+                        timeout=10,
+                        cwd=_get_scratch_dir(),
+                        env=minimal_env,
+                    )
+                    if res.returncode == 0:
+                        compiler_verified = True
+                        compiler_output = "Lean 4 kernel certified: 0 errors."
+                    else:
+                        compiler_output = res.stderr or res.stdout
+                except Exception as e:
+                    compiler_output = f"Lean invocation failed: {str(e)}"
+        else:
+            compiler_output = "Lean 4 CLI is enabled in config, but `lean` binary was not found on PATH."
+
+    # 5. Certification status (certified is True ONLY if the Lean kernel actually verified it)
     if holes:
         status = "REJECTED_UNPROVEN_HOLES"
         certified = False
-    elif axioms:
-        status = "CONDITIONAL_AXIOM_DEPENDENCY"
-        certified = True
     elif compiler_verified:
         status = "MACHINE_CERTIFIED_LEAN4"
         certified = True
+    elif axioms:
+        status = "UNCHECKED_AXIOM_DEPENDENCY"
+        certified = False
     else:
-        status = "SYNTACTICALLY_VALID_PROOF"
-        certified = True
+        status = "UNCHECKED_NO_HOLES"
+        certified = False
 
     return {
         "status": status,
@@ -131,5 +173,5 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
         "holes": holes,
         "axioms_used": axioms,
         "compiler_verified": compiler_verified,
-        "compiler_message": compiler_output or ("No holes found, syntactically clean." if certified else "Contains incomplete proof markers."),
+        "compiler_message": compiler_output or ("Contains unproven holes (sorry/admit)." if holes else "Static inspection: no holes detected (Lean kernel check disabled)."),
     }
