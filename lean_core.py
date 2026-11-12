@@ -97,55 +97,41 @@ def audit_lean4_code(code: str) -> Dict[str, Any]:
     for match in axiom_pattern.finditer(code):
         axioms.append(match.group(2))
 
-    # 4. Optional Lean 4 CLI execution (disabled by default; requires approval, minimal env, scratch cwd)
+    # 4. Optional Lean 4 CLI execution (disabled by default; approved via pre_tool_call hook, minimal env, scratch cwd)
     compiler_verified = False
     compiler_output = ""
 
     if is_lean_cli_enabled() and not holes:
         lean_bin = shutil.which("lean")
         if lean_bin:
-            # Request approval via Hermes approval gate if available
-            approved = True
-            try:
-                from tools.approval import request_tool_approval
-                approval_res = request_tool_approval(
-                    tool_name="lean4_proof_audit",
-                    reason="Validate Lean 4 proof snippet via local `lean --stdin`",
-                )
-                approved = bool(approval_res.get("approved"))
-            except Exception:
-                # If tools.approval is not present (e.g. standalone test harness), proceed if explicitly enabled
-                approved = True
-
-            if not approved:
-                compiler_output = "Skipped local Lean CLI check: user approval was not granted."
-            else:
-                minimal_env: Dict[str, str] = {}
-                for var in ("PATH", "HOME", "LANG", "LEAN_PATH"):
+            minimal_env: Dict[str, str] = {}
+            for var in ("PATH", "HOME", "LANG", "LEAN_PATH"):
+                if var in os.environ:
+                    minimal_env[var] = os.environ[var]
+            if os.name == "nt":
+                for var in ("SystemRoot", "USERPROFILE", "TEMP", "TMP"):
                     if var in os.environ:
                         minimal_env[var] = os.environ[var]
-                if os.name == "nt":
-                    for var in ("SystemRoot", "USERPROFILE", "TEMP", "TMP"):
-                        if var in os.environ:
-                            minimal_env[var] = os.environ[var]
 
-                try:
-                    res = subprocess.run(
-                        [lean_bin, "--stdin"],
-                        input=code,
-                        text=True,
-                        capture_output=True,
-                        timeout=10,
-                        cwd=_get_scratch_dir(),
-                        env=minimal_env,
-                    )
-                    if res.returncode == 0:
-                        compiler_verified = True
-                        compiler_output = "Lean 4 kernel certified: 0 errors."
-                    else:
-                        compiler_output = res.stderr or res.stdout
-                except Exception as e:
-                    compiler_output = f"Lean invocation failed: {str(e)}"
+            try:
+                res = subprocess.run(
+                    [lean_bin, "--stdin"],
+                    input=code,
+                    text=True,
+                    capture_output=True,
+                    timeout=10,
+                    cwd=_get_scratch_dir(),
+                    env=minimal_env,
+                )
+                if res.returncode == 0:
+                    compiler_verified = True
+                    compiler_output = "Lean 4 kernel certified: 0 errors."
+                else:
+                    compiler_output = res.stderr or res.stdout
+            except subprocess.TimeoutExpired:
+                compiler_output = "Lean 4 process timed out after 10s."
+            except Exception as e:
+                compiler_output = f"Lean invocation failed: {str(e)}"
         else:
             compiler_output = "Lean 4 CLI is enabled in config, but `lean` binary was not found on PATH."
 

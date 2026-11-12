@@ -35,7 +35,7 @@ def test_manifest_structure():
         manifest = yaml.safe_load(f)
 
     assert manifest["name"] == "verifiable-math-kernel"
-    assert manifest["version"] == "1.0.3"
+    assert manifest["version"] == "1.0.4"
     assert manifest["maintainer"] == "pCwOrM"
     assert manifest["category"] == "tools"
     assert "pre_tool_call" in manifest["provides_hooks"]

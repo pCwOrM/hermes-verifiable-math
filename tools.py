@@ -5,10 +5,12 @@ Implements exact symbolic mathematics, factorization, elliptic curve analysis, a
 
 from __future__ import annotations
 
-import concurrent.futures
 import hashlib
 import json
+import os
 import re
+import subprocess
+import sys
 from typing import Dict, Any, List, Optional
 
 import sympy as sp
@@ -20,7 +22,10 @@ from sympy.parsing.sympy_parser import (
     rationalize,
 )
 
-from . import sieve_core, elliptic_core, lean_core
+from . import eval_worker, sieve_core, elliptic_core, lean_core
+
+_check_expression_syntax = eval_worker.check_expression_syntax
+_safe_parse_expr = eval_worker.safe_parse_expr
 
 # Safe mathematical globals for SymPy expression parsing (no builtins)
 _SAFE_SYMPY_GLOBALS: Dict[str, Any] = {
@@ -67,65 +72,10 @@ _DOMAIN_ASSUMPTIONS: Dict[str, Dict[str, bool]] = {
 }
 
 
-def _safe_parse_expr(
-    expr_str: str,
-    domain: str = "real",
-    variables: Optional[List[str]] = None,
-) -> sp.Expr:
-    """Safely parse a mathematical expression without exposing Python builtins or attribute access."""
-    cleaned = expr_str.strip()
-    if len(cleaned) > 1000:
-        raise ValueError("Expression exceeds maximum length (1000 chars).")
-    if _UNSAFE_EXPR_PATTERN.search(cleaned):
-        raise ValueError("Expression contains disallowed tokens.")
-    # Reject attribute access (dots not flanked by digits)
-    if re.search(r"(?<![0-9])\.|\.(?![0-9])", cleaned):
-        raise ValueError("Attribute access is not permitted in mathematical expressions.")
-
-    # Bound work: disallow chained exponentiation (power towers) and cap large integer exponents
-    if re.search(r"(?:\*\*|\^)\s*[\w\(\)]+\s*(?:\*\*|\^)", cleaned):
-        raise ValueError("Chained exponentiation (power towers) is disallowed to prevent resource exhaustion.")
-    for exp_match in re.finditer(r"(?:\*\*|\^)\s*([0-9]+)", cleaned):
-        if int(exp_match.group(1)) > 5000:
-            raise ValueError("Exponent exceeds maximum allowed limit (5000).")
-
-    norm_domain = domain if domain in _DOMAIN_ASSUMPTIONS else "real"
-    assumptions = _DOMAIN_ASSUMPTIONS[norm_domain]
-
-    transformations = standard_transformations + (implicit_multiplication_application, convert_xor)
-    if norm_domain == "rational":
-        transformations = transformations + (rationalize,)
-
-    local_dict: Dict[str, Any] = {}
-    if variables and isinstance(variables, list):
-        for var_name in variables:
-            if isinstance(var_name, str):
-                v_clean = var_name.strip()
-                if re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", v_clean) and v_clean not in _SAFE_SYMPY_GLOBALS:
-                    local_dict[v_clean] = sp.Symbol(v_clean, **assumptions)
-
-    for ident in re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", cleaned):
-        if ident not in _SAFE_SYMPY_GLOBALS and ident not in local_dict:
-            local_dict[ident] = sp.Symbol(ident, **assumptions)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(
-            parse_expr,
-            cleaned,
-            local_dict=local_dict,
-            global_dict=dict(_SAFE_SYMPY_GLOBALS),
-            transformations=transformations,
-            evaluate=True,
-        )
-        try:
-            return future.result(timeout=5.0)
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError("Expression evaluation timed out (5.0s computation limit exceeded).")
-
-
 def verify_math_claim_handler(args: Dict[str, Any]) -> str:
     """
     Evaluates and formally verifies an algebraic statement or equation.
+    Runs parsing and simplification in an isolated child process with an enforced 5.0s timeout.
     """
     statement = str(args.get("statement", "")).strip()
     if not statement:
@@ -136,61 +86,45 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
     variables = args.get("variables")
     var_list = [str(v) for v in variables] if isinstance(variables, list) else None
 
+    # Pre-flight syntax validation before spawning child process
     try:
-        # Check for equality statement
         if "==" in statement or "=" in statement:
             delim = "==" if "==" in statement else "="
-            parts = statement.split(delim, 1)
-            lhs_expr = _safe_parse_expr(parts[0], domain=domain, variables=var_list)
-            rhs_expr = _safe_parse_expr(parts[1], domain=domain, variables=var_list)
-
-            diff = sp.simplify(lhs_expr - rhs_expr)
-            is_identical = bool(diff == 0)
-
-            # Collect free variables
-            all_free = sorted(str(s) for s in (lhs_expr.free_symbols | rhs_expr.free_symbols))
-
-            proof_trace = (
-                f"1. Parsed LHS: {lhs_expr}\n"
-                f"2. Parsed RHS: {rhs_expr}\n"
-                f"3. Difference canonical form: {diff}\n"
-                f"4. Identity holds identically: {is_identical}"
-            )
-
-            result = {
-                "verified": is_identical,
-                "domain": domain,
-                "statement": statement,
-                "free_symbols": all_free,
-                "difference_canonical": str(diff),
-                "proof_trace": proof_trace,
-                "lhs_canonical": str(lhs_expr),
-                "rhs_canonical": str(rhs_expr),
-                "verification_hash": hashlib.sha256(statement.encode("utf-8")).hexdigest()[:16],
-            }
+            for p in statement.split(delim, 1):
+                eval_worker.check_expression_syntax(p.strip())
         else:
-            # Single expression simplification / evaluation
-            expr = _safe_parse_expr(statement, domain=domain, variables=var_list)
-            simplified = sp.simplify(expr)
-            factored = sp.factor(expr)
-            expanded = sp.expand(expr)
-            free_syms = sorted(str(s) for s in expr.free_symbols)
+            eval_worker.check_expression_syntax(statement)
+    except ValueError as e:
+        return json.dumps({"error": f"Symbolic evaluation failed: {str(e)}"}, indent=2)
 
-            result = {
-                "expression": statement,
-                "domain": domain,
-                "free_symbols": free_syms,
-                "simplified": str(simplified),
-                "factored": str(factored),
-                "expanded": str(expanded),
-                "latex": sp.latex(simplified),
-                "is_constant": bool(simplified.is_constant()),
-                "numeric_approx": str(simplified.evalf(30)) if simplified.is_constant() else None,
-                "verification_hash": hashlib.sha256(statement.encode("utf-8")).hexdigest()[:16],
-            }
+    worker_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_worker.py")
+    payload = json.dumps({"statement": statement, "domain": domain, "variables": var_list})
 
-        return json.dumps(result, indent=2)
+    try:
+        proc = subprocess.run(
+            [sys.executable, worker_file],
+            input=payload,
+            text=True,
+            capture_output=True,
+            timeout=5.0,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+        if proc.returncode != 0:
+            err = proc.stderr.strip() or f"Worker process failed with code {proc.returncode}"
+            return json.dumps({"error": f"Symbolic evaluation failed: {err}"}, indent=2)
+        out = proc.stdout.strip()
+        if not out:
+            return json.dumps({"error": "Empty response from evaluation worker."}, indent=2)
+        resp = json.loads(out)
+        if resp.get("ok"):
+            return json.dumps(resp["result"], indent=2)
+        else:
+            return json.dumps({"error": f"Symbolic evaluation failed: {resp.get('error')}"}, indent=2)
 
+    except subprocess.TimeoutExpired:
+        return json.dumps({
+            "error": "Expression evaluation timed out (5.0s computation limit exceeded)."
+        }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Symbolic evaluation failed: {str(e)}"}, indent=2)
 

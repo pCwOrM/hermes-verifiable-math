@@ -160,3 +160,22 @@ def test_safe_parse_blocks_injection():
     res_str = tools.verify_math_claim_handler({"statement": "__import__('os').system('echo pwn')"})
     data = json.loads(res_str)
     assert "error" in data
+
+
+def test_oversized_integer_literal_bounding():
+    # Integer literal > 100 digits is rejected
+    res_str = tools.verify_math_claim_handler({"statement": "1" + "0" * 105})
+    data = json.loads(res_str)
+    assert "error" in data
+    assert "integer literal exceeds" in data["error"].lower()
+
+
+def test_evaluation_process_timeout(monkeypatch):
+    import subprocess
+    def mock_run(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=args[0], timeout=5.0)
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    res_str = tools.verify_math_claim_handler({"statement": "x + 1 == x + 1"})
+    data = json.loads(res_str)
+    assert "error" in data
+    assert "timed out" in data["error"].lower()

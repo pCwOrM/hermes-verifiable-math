@@ -1,5 +1,5 @@
 name: verifiable-math-kernel
-version: "1.0.3"
+version: "1.0.4"
 description: >-
   Deterministic symbolic computation, integer factorization with Baillie-PSW
   probable-prime testing, elliptic curve invariant analysis, and formal Lean 4

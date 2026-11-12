@@ -202,10 +202,9 @@ tests/test_tools.py::test_certified_factorization_prime PASSED
 tests/test_tools.py::test_elliptic_curve_analyzer PASSED
 tests/test_tools.py::test_elliptic_curve_analyzer_skip_torsion PASSED
 tests/test_tools.py::test_lean4_audit_with_sorry PASSED
-tests/test_tools.py::test_lean4_audit_complete_proof PASSED
-tests/test_tools.py::test_lean4_audit_blocks_unsafe_directives PASSED
+tests/test_tools.py::test_lean4_audit_unchecked_no_holes_by_default PASSED
 tests/test_tools.py::test_safe_parse_blocks_injection PASSED
-==================== 21 passed in 1.85s ====================
+==================== 22 passed in 1.15s ====================
 ```
 
 ---

@@ -34,7 +34,17 @@ def test_pre_hook_clean_call():
     assert res["warning"] is None
 
 
+def test_pre_hook_lean_approval():
+    from conftest import lean_core
+    lean_core.configure_runtime(enable_lean_cli=True)
+    res = hooks.math_pre_execution_guard("lean4_proof_audit", {"code": "theorem test : 1 + 1 = 2 := rfl"})
+    assert res["action"] == "approve"
+    assert res["rule_key"] == "verifiable-math-kernel:lean"
+    assert "lean --stdin" in res["message"]
+    lean_core.configure_runtime(enable_lean_cli=False)
+
+
 def test_post_hook_proof_stamp():
     res = hooks.math_post_execution_verifier("verify_math_claim", {"verified": True}, task_id="t1")
-    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.3"
+    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.4"
     assert res["proof_stamp"].startswith("[VERIFIED-MATH-PROOF-v1:")
