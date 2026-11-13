@@ -4,7 +4,7 @@
 
 [![Hermes Community Plugin](https://img.shields.io/badge/Hermes%20Plugin-Community-blue.svg)](https://hermes-agent.nousresearch.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 21 Passed](https://img.shields.io/badge/Tests-21%2F21%20Passed-brightgreen.svg)](#testing)
+[![Tests: 25/25 Passed](https://img.shields.io/badge/Tests-25%2F25%20Passed-brightgreen.svg)](#testing)
 [![Category: Tools](https://img.shields.io/badge/Category-Tools%20%26%20Reasoning-purple.svg)](plugin.yaml)
 [![arXiv:2611.11641](https://img.shields.io/badge/arXiv-2611.11641%20%5Bcs.LO%5D-b31b1b.svg)](https://arxiv.org/abs/2611.11641)
 [![NSF ICARM Verified](https://img.shields.io/badge/NSF--ICARM-Grant%20DMS--2425401-orange.svg)](https://icarm.io)
@@ -189,6 +189,7 @@ tests/test_doctor.py::test_register_context_wiring PASSED
 tests/test_hooks.py::test_pre_hook_precision_trap_detection PASSED
 tests/test_hooks.py::test_pre_hook_auto_rational_upgrade_on_verify_math_claim PASSED
 tests/test_hooks.py::test_pre_hook_clean_call PASSED
+tests/test_hooks.py::test_pre_hook_lean_approval PASSED
 tests/test_hooks.py::test_post_hook_proof_stamp PASSED
 tests/test_tools.py::test_verify_trig_identity PASSED
 tests/test_tools.py::test_verify_algebraic_identity PASSED
@@ -196,6 +197,8 @@ tests/test_tools.py::test_verify_rational_domain_exact_decimal PASSED
 tests/test_tools.py::test_verify_domain_and_variables_wiring PASSED
 tests/test_tools.py::test_verify_false_statement PASSED
 tests/test_tools.py::test_expression_simplification PASSED
+tests/test_tools.py::test_power_tower_resource_bounding PASSED
+tests/test_tools.py::test_large_exponent_bounding PASSED
 tests/test_tools.py::test_certified_factorization PASSED
 tests/test_tools.py::test_certified_factorization_without_certificates PASSED
 tests/test_tools.py::test_certified_factorization_prime PASSED
@@ -204,8 +207,14 @@ tests/test_tools.py::test_elliptic_curve_analyzer_skip_torsion PASSED
 tests/test_tools.py::test_lean4_audit_with_sorry PASSED
 tests/test_tools.py::test_lean4_audit_unchecked_no_holes_by_default PASSED
 tests/test_tools.py::test_safe_parse_blocks_injection PASSED
-==================== 22 passed in 1.15s ====================
+tests/test_tools.py::test_oversized_integer_literal_bounding PASSED
+tests/test_tools.py::test_evaluation_process_timeout PASSED
+============================= 25 passed in 14.01s =============================
 ```
+
+### Release Notes & Kaggle Gemma 4 Paper Track Alignment (`v1.0.4` → `v1.0.5`)
+
+The Kaggle Paper Track writeup *"Dual-Process SWE Agent: Gemma 4 with Zero-Tensor Reflex & Formal Verification"* ([DOI: 10.34740/kaggle/w/125932](https://doi.org/10.34740/kaggle/w/125932)) cites the isolated child-process execution and AST bounding architecture introduced in **`v1.0.4`**. Release **`v1.0.5`** preserves all `v1.0.4` safety guarantees (5.0s OS subprocess timeout, syntactic AST bounds, rational upgrades, and Lean 4 approval gating) while adding positional `register_hook` compatibility, `lean_code` payload inspection, and sanitized subprocess environment handling (`25/25` passing tests).
 
 ---
 

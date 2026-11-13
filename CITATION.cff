@@ -19,10 +19,13 @@ authors:
 repository-code: "https://github.com/pCwOrM/hermes-verifiable-math"
 url: "https://werr.io"
 doi: "10.5281/zenodo.23092708"
-version: "2.0.0"
-date-released: "2026-10-25"
-license: "LicenseRef-BSL-1.1"
+version: "1.0.5"
+date-released: "2026-11-12"
+license: "MIT"
 identifiers:
+  - type: doi
+    value: "10.34740/kaggle/w/125932"
+    description: "Kaggle Paper Track Writeup (Dual-Process SWE Agent: Gemma 4 with Zero-Tensor Reflex & Formal Verification)"
   - type: doi
     value: "10.5281/zenodo.23092708"
     description: "CERN Zenodo Concept DOI (Always resolves to the latest version)"
