@@ -1,6 +1,6 @@
 [project]
 name = "hermes-verifiable-math"
-version = "1.0.4"
+version = "1.0.5"
 description = "Deterministic symbolic computation, integer factorization with Baillie-PSW probable-prime testing, elliptic curve invariant analysis, and formal Lean 4 proof auditing for Hermes Agent."
 readme = "README.md"
 authors = [{ name = "Volkan Dagli" }]

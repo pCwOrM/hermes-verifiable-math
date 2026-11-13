@@ -20,7 +20,7 @@ if not __package__:
 
 from . import schemas, tools, hooks, lean_core
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __author__ = "Volkan Dagli"
 
 logger = logging.getLogger(__name__)
@@ -96,15 +96,8 @@ def register(ctx: Any) -> None:
     )
 
     # 3. Register lifecycle hooks
-    ctx.register_hook(
-        event="pre_tool_call",
-        handler=hooks.math_pre_execution_guard,
-    )
-
-    ctx.register_hook(
-        event="post_tool_call",
-        handler=hooks.math_post_execution_verifier,
-    )
+    ctx.register_hook("pre_tool_call", hooks.math_pre_execution_guard)
+    ctx.register_hook("post_tool_call", hooks.math_post_execution_verifier)
 
     # 4. Register slash commands
     register_cmd = getattr(ctx, "register_command", None) or getattr(ctx, "register_slash_command", None)

@@ -33,7 +33,7 @@ def math_pre_execution_guard(
 
     # Check Lean CLI approval gate when enabled and snippet has no holes
     if tool_name == "lean4_proof_audit" and lean_core.is_lean_cli_enabled():
-        code = str(safe_args.get("code") or "")
+        code = str(safe_args.get("lean_code") or safe_args.get("code") or "")
         has_holes = any(re.search(r"\b(sorry|admit)\b", line.split("--")[0]) for line in code.splitlines())
         if not has_holes:
             snippet_preview = code.strip().splitlines()[0][:60] if code.strip() else ""
@@ -97,6 +97,6 @@ def math_post_execution_verifier(
     cert_hash = hashlib.sha256(result_str.encode("utf-8")).hexdigest()[:16]
 
     return {
-        "verified_by": "Hermes-Verifiable-Math-v1.0.4",
+        "verified_by": "Hermes-Verifiable-Math-v1.0.5",
         "proof_stamp": f"[VERIFIED-MATH-PROOF-v1:{cert_hash}]",
     }

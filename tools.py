@@ -100,6 +100,16 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
     worker_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_worker.py")
     payload = json.dumps({"statement": statement, "domain": domain, "variables": var_list})
 
+    # Minimal environment whitelist for SymPy child worker process
+    worker_env: Dict[str, str] = {}
+    for var in ("PATH", "PYTHONPATH", "PYTHONHOME", "HOME", "LANG"):
+        if var in os.environ:
+            worker_env[var] = os.environ[var]
+    if os.name == "nt":
+        for var in ("SystemRoot", "SYSTEMROOT", "USERPROFILE", "TEMP", "TMP"):
+            if var in os.environ:
+                worker_env[var] = os.environ[var]
+
     try:
         proc = subprocess.run(
             [sys.executable, worker_file],
@@ -108,6 +118,7 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
             capture_output=True,
             timeout=5.0,
             cwd=os.path.dirname(os.path.abspath(__file__)),
+            env=worker_env,
         )
         if proc.returncode != 0:
             err = proc.stderr.strip() or f"Worker process failed with code {proc.returncode}"

@@ -17,8 +17,8 @@ class MockHermesContext:
         self.tools = {}
         self.commands = {}
 
-    def register_hook(self, event, handler, **kwargs):
-        self.hooks[event] = handler
+    def register_hook(self, hook_name, callback, **kwargs):
+        self.hooks[hook_name] = callback
 
     def register_tool(self, name, handler=None, **kwargs):
         self.tools[name] = {"handler": handler, **kwargs}
@@ -35,7 +35,7 @@ def test_manifest_structure():
         manifest = yaml.safe_load(f)
 
     assert manifest["name"] == "verifiable-math-kernel"
-    assert manifest["version"] == "1.0.4"
+    assert manifest["version"] == "1.0.5"
     assert manifest["maintainer"] == "pCwOrM"
     assert manifest["category"] == "tools"
     assert "pre_tool_call" in manifest["provides_hooks"]
