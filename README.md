@@ -210,9 +210,9 @@ tests/test_tools.py::test_evaluation_process_timeout PASSED
 ============================= 25 passed in 14.01s =============================
 ```
 
-### Release Notes & Kaggle Gemma 4 Paper Track Alignment (`v1.0.4` → `v1.0.5`)
+### Release Notes & Kaggle Gemma 4 Paper Track Alignment (`v1.0.4` → `v1.0.6`)
 
-The Kaggle Paper Track writeup *"Dual-Process SWE Agent: Gemma 4 with Zero-Tensor Reflex & Formal Verification"* ([DOI: 10.34740/kaggle/w/125932](https://doi.org/10.34740/kaggle/w/125932)) cites the isolated child-process execution and AST bounding architecture introduced in **`v1.0.4`**. Release **`v1.0.5`** preserves all `v1.0.4` safety guarantees (15.0s OS subprocess timeout guard, OpenAI `parameters`/`description` schema compliance, syntactic AST bounds, rational upgrades, and Lean 4 approval gating) while adding positional `register_hook` compatibility, `lean_code` payload inspection, `plugin-data` path alignment, and sanitized subprocess environment handling.
+The Kaggle Paper Track writeup *"Dual-Process SWE Agent: Gemma 4 with Zero-Tensor Reflex & Formal Verification"* ([DOI: 10.34740/kaggle/w/125932](https://doi.org/10.34740/kaggle/w/125932)) cites the isolated child-process execution and AST bounding architecture introduced in **`v1.0.4`**. Release **`v1.0.6`** preserves all `v1.0.4`–`v1.0.5` safety guarantees (15.0s OS subprocess timeout guard, OpenAI `parameters`/`description` schema compliance, syntactic AST bounds, rational upgrades, and Lean 4 approval gating) while adding positional `register_hook` compatibility, `lean_code` payload inspection, `plugin-data` path alignment (`plugins.plugin_storage.plugin_data_dir`), and sanitized subprocess environment handling.
 
 ### Disclosure
 - The `lean4_proof_audit` tool runs regex-based static inspection by default (`enable_lean_cli: false`). Only when `enable_lean_cli` is explicitly enabled and `lean` is available on `PATH` does it invoke a local `lean --stdin` subprocess in an isolated scratch directory under `HERMES_HOME/plugin-data/verifiable-math-kernel/scratch`.

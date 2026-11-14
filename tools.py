@@ -207,7 +207,7 @@ def math_cli_status(args_str: str = "", **kwargs: Any) -> str:
     """
     if not args_str.strip():
         return (
-            "Hermes Verifiable Math Kernel [v1.0.5]\n"
+            "Hermes Verifiable Math Kernel [v1.0.6]\n"
             "Engine: SymPy CAS + Werr Multi-Layer Sieve + Baillie-PSW + Lean 4\n"
             "Usage: /verify <math_expression_or_equality>"
         )

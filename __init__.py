@@ -20,7 +20,7 @@ if not __package__:
 
 from . import schemas, tools, hooks, lean_core
 
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 __author__ = "Volkan Dagli"
 
 logger = logging.getLogger(__name__)

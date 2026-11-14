@@ -19,7 +19,7 @@ authors:
 repository-code: "https://github.com/pCwOrM/hermes-verifiable-math"
 url: "https://werr.io"
 doi: "10.5281/zenodo.23092708"
-version: "1.0.5"
+version: "1.0.6"
 date-released: "2026-11-12"
 license: "MIT"
 identifiers:

@@ -46,5 +46,5 @@ def test_pre_hook_lean_approval():
 
 def test_post_hook_proof_stamp():
     res = hooks.math_post_execution_verifier("verify_math_claim", {"verified": True}, task_id="t1")
-    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.5"
+    assert res["verified_by"] == "Hermes-Verifiable-Math-v1.0.6"
     assert res["proof_stamp"].startswith("[VERIFIED-MATH-PROOF-v1:")

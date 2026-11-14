@@ -1,6 +1,6 @@
 [project]
 name = "hermes-verifiable-math"
-version = "1.0.5"
+version = "1.0.6"
 description = "Deterministic symbolic computation, integer factorization with Baillie-PSW probable-prime testing, elliptic curve invariant analysis, and formal Lean 4 proof auditing for Hermes Agent."
 readme = "README.md"
 authors = [{ name = "Volkan Dagli" }]
@@ -42,12 +42,6 @@ Documentation = "https://github.com/pCwOrM/hermes-verifiable-math#readme"
 "Hermes Agent" = "https://hermes-agent.nousresearch.com"
 "arXiv Preprint (Collatz Lean 4)" = "https://arxiv.org/abs/2611.11641"
 "CERN Zenodo Archive" = "https://doi.org/10.5281/zenodo.24060394"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0,<10.0",
-    "pyyaml>=6.0,<7.0",
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
