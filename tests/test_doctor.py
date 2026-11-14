@@ -36,8 +36,8 @@ def test_manifest_structure():
 
     assert manifest["name"] == "verifiable-math-kernel"
     assert manifest["version"] == "1.0.5"
-    assert manifest["maintainer"] == "pCwOrM"
-    assert manifest["category"] == "tools"
+    assert manifest["requires_hermes"] == ">=0.21.0"
+    assert "tags" in manifest
     assert "pre_tool_call" in manifest["provides_hooks"]
     assert "verify_math_claim" in manifest["provides_tools"]
     assert "certified_factorization" in manifest["provides_tools"]

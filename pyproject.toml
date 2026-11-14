@@ -45,8 +45,8 @@ Documentation = "https://github.com/pCwOrM/hermes-verifiable-math#readme"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pyyaml>=6.0",
+    "pytest>=8.0.0,<10.0",
+    "pyyaml>=6.0,<7.0",
 ]
 
 [tool.pytest.ini_options]

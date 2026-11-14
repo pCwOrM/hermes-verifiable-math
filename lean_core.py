@@ -32,11 +32,18 @@ def _active_scope_key() -> str:
 def _get_scratch_dir() -> str:
     """Resolve and create isolated scratch cwd under plugin's profile data directory."""
     try:
+        from plugins.plugin_storage import plugin_data_dir
+        scratch = Path(plugin_data_dir("verifiable-math-kernel")) / "scratch"
+        scratch.mkdir(parents=True, exist_ok=True)
+        return str(scratch)
+    except Exception:
+        pass
+    try:
         from hermes_constants import get_hermes_home
         base = Path(get_hermes_home())
     except Exception:
         base = Path.home() / ".hermes"
-    scratch = base / "plugins_data" / "verifiable-math-kernel" / "scratch"
+    scratch = base / "plugin-data" / "verifiable-math-kernel" / "scratch"
     scratch.mkdir(parents=True, exist_ok=True)
     return str(scratch)
 

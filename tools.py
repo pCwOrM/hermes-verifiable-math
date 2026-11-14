@@ -72,7 +72,7 @@ _DOMAIN_ASSUMPTIONS: Dict[str, Dict[str, bool]] = {
 }
 
 
-def verify_math_claim_handler(args: Dict[str, Any]) -> str:
+def verify_math_claim_handler(args: Dict[str, Any], **kwargs: Any) -> str:
     """
     Evaluates and formally verifies an algebraic statement or equation.
     Runs parsing and simplification in an isolated child process with an enforced 5.0s timeout.
@@ -116,7 +116,7 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
             input=payload,
             text=True,
             capture_output=True,
-            timeout=5.0,
+            timeout=15.0,
             cwd=os.path.dirname(os.path.abspath(__file__)),
             env=worker_env,
         )
@@ -134,13 +134,13 @@ def verify_math_claim_handler(args: Dict[str, Any]) -> str:
 
     except subprocess.TimeoutExpired:
         return json.dumps({
-            "error": "Expression evaluation timed out (5.0s computation limit exceeded)."
+            "error": "Expression evaluation timed out (15.0s computation limit exceeded)."
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": f"Symbolic evaluation failed: {str(e)}"}, indent=2)
 
 
-def certified_factorization_handler(args: Dict[str, Any]) -> str:
+def certified_factorization_handler(args: Dict[str, Any], **kwargs: Any) -> str:
     """
     Factors integer n and performs Baillie-PSW probable-prime testing.
     """
@@ -162,7 +162,7 @@ def certified_factorization_handler(args: Dict[str, Any]) -> str:
         return json.dumps({"error": f"Factorization failed: {str(e)}"}, indent=2)
 
 
-def elliptic_curve_analyzer_handler(args: Dict[str, Any]) -> str:
+def elliptic_curve_analyzer_handler(args: Dict[str, Any], **kwargs: Any) -> str:
     """
     Computes exact arithmetic geometry invariants and Mazur torsion classification.
     """
@@ -186,7 +186,7 @@ def elliptic_curve_analyzer_handler(args: Dict[str, Any]) -> str:
         return json.dumps({"error": f"Elliptic curve analysis failed: {str(e)}"}, indent=2)
 
 
-def lean4_proof_audit_handler(args: Dict[str, Any]) -> str:
+def lean4_proof_audit_handler(args: Dict[str, Any], **kwargs: Any) -> str:
     """
     Audits Lean 4 code snippets for unproven holes (sorry) and formal soundness.
     """
@@ -201,24 +201,24 @@ def lean4_proof_audit_handler(args: Dict[str, Any]) -> str:
         return json.dumps({"error": f"Lean 4 audit failed: {str(e)}"}, indent=2)
 
 
-def math_cli_status(args_str: str = "") -> str:
+def math_cli_status(args_str: str = "", **kwargs: Any) -> str:
     """
     Interactive CLI status and quick verification command for /verify.
     """
     if not args_str.strip():
         return (
-            "Hermes Verifiable Math Kernel [v1.0.3]\n"
+            "Hermes Verifiable Math Kernel [v1.0.5]\n"
             "Engine: SymPy CAS + Werr Multi-Layer Sieve + Baillie-PSW + Lean 4\n"
             "Usage: /verify <math_expression_or_equality>"
         )
     return verify_math_claim_handler({"statement": args_str.strip()})
 
 
-def slash_verify_handler(args_str: str = "") -> str:
+def slash_verify_handler(args_str: str = "", **kwargs: Any) -> str:
     """Handler for /verify slash command."""
     return math_cli_status(args_str)
 
 
-def slash_math_handler(args_str: str = "") -> str:
+def slash_math_handler(args_str: str = "", **kwargs: Any) -> str:
     """Handler for /math slash command."""
     return math_cli_status(args_str)

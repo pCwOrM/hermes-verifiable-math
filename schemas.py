@@ -3,67 +3,83 @@ JSON Schemas for Hermes Verifiable Math tools.
 """
 
 VERIFY_MATH_CLAIM_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "statement": {
-            "type": "string",
-            "description": "Mathematical identity, equation (e.g. 'sin(x)**2 + cos(x)**2 == 1'), or algebraic expression to prove/simplify.",
+    "name": "verify_math_claim",
+    "description": "Verify symbolic identities, equation equivalence, and simplify mathematical claims with SymPy CAS.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "statement": {
+                "type": "string",
+                "description": "Mathematical identity, equation (e.g. 'sin(x)**2 + cos(x)**2 == 1'), or algebraic expression to prove/simplify.",
+            },
+            "domain": {
+                "type": "string",
+                "enum": ["real", "integer", "rational", "complex"],
+                "default": "real",
+                "description": "Assumed mathematical domain for variables.",
+            },
+            "variables": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional explicit list of free symbols/variables.",
+            },
         },
-        "domain": {
-            "type": "string",
-            "enum": ["real", "integer", "rational", "complex"],
-            "default": "real",
-            "description": "Assumed mathematical domain for variables.",
-        },
-        "variables": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Optional explicit list of free symbols/variables.",
-        },
+        "required": ["statement"],
     },
-    "required": ["statement"],
 }
 
 CERTIFIED_FACTORIZATION_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "n": {
-            "type": "integer",
-            "description": "Integer to decompose into prime factors verified via Baillie-PSW probable-prime testing.",
+    "name": "certified_factorization",
+    "description": "Factorize integers using multi-stage algebraic sieves and Baillie-PSW probable-prime testing.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "n": {
+                "type": "integer",
+                "description": "Integer to decompose into prime factors verified via Baillie-PSW probable-prime testing.",
+            },
+            "generate_certificates": {
+                "type": "boolean",
+                "default": True,
+                "description": "Whether to attach Baillie-PSW probable-prime test results for each factor.",
+            },
         },
-        "generate_certificates": {
-            "type": "boolean",
-            "default": True,
-            "description": "Whether to attach Baillie-PSW probable-prime test results for each factor.",
-        },
+        "required": ["n"],
     },
-    "required": ["n"],
 }
 
 ELLIPTIC_CURVE_ANALYZER_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "weierstrass": {
-            "type": "array",
-            "items": {"type": "integer"},
-            "description": "Weierstrass coefficients: either [a1, a2, a3, a4, a6] for general model, or [a, b] for short model y^2 = x^3 + ax + b.",
+    "name": "elliptic_curve_analyzer",
+    "description": "Compute algebraic invariants, discriminants, bad reduction primes, and torsion groups of elliptic curves.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "weierstrass": {
+                "type": "array",
+                "items": {"type": "integer"},
+                "description": "Weierstrass coefficients: either [a1, a2, a3, a4, a6] for general model, or [a, b] for short model y^2 = x^3 + ax + b.",
+            },
+            "compute_torsion": {
+                "type": "boolean",
+                "default": True,
+                "description": "Whether to compute rational torsion points and classify the Mazur torsion subgroup.",
+            },
         },
-        "compute_torsion": {
-            "type": "boolean",
-            "default": True,
-            "description": "Whether to compute rational torsion points and classify the Mazur torsion subgroup.",
-        },
+        "required": ["weierstrass"],
     },
-    "required": ["weierstrass"],
 }
 
 LEAN4_PROOF_AUDIT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "lean_code": {
-            "type": "string",
-            "description": "Lean 4 source code snippet containing theorem statements, tactics, or proofs to audit for unproven holes (sorry) and formal soundness.",
+    "name": "lean4_proof_audit",
+    "description": "Audit Lean 4 formal math proofs, check for unproven hypotheses ('sorry'), and verify via Lean CLI.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "lean_code": {
+                "type": "string",
+                "description": "Lean 4 source code snippet containing theorem statements, tactics, or proofs to audit for unproven holes (sorry) and formal soundness.",
+            },
         },
+        "required": ["lean_code"],
     },
-    "required": ["lean_code"],
 }

@@ -7,16 +7,15 @@ description: >-
   optionally validate proof syntax via local `lean --stdin` with per-call
   approval and minimal environment.
 author: "Volkan Dagli"
-maintainer: pCwOrM
-tier: community
-category: tools
 license: "MIT"
 homepage: "https://github.com/pCwOrM/hermes-verifiable-math"
 requires_hermes: ">=0.21.0"
-platforms:
-  - linux
-  - macos
-  - windows
+tags:
+  - tools
+  - math
+  - symbolic
+  - formal-verification
+  - lean4
 provides_tools:
   - verify_math_claim
   - certified_factorization
