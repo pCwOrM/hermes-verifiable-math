@@ -9,6 +9,27 @@
 [![arXiv:2611.11641](https://img.shields.io/badge/arXiv-2611.11641%20%5Bcs.LO%5D-b31b1b.svg)](https://arxiv.org/abs/2611.11641)
 [![NSF ICARM Verified](https://img.shields.io/badge/NSF--ICARM-Grant%20DMS--2425401-orange.svg)](https://icarm.io)
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Hermes Verifiable Math Live Demo" width="820" />
+</p>
+
+## ⚡ 30-Second Quick Start
+
+```bash
+git clone https://github.com/pCwOrM/hermes-verifiable-math.git && cd hermes-verifiable-math
+pip install sympy z3-solver
+python -c "
+import importlib, sys; sys.path.insert(0, '..')
+vm = importlib.import_module('hermes-verifiable-math')
+print(vm.tools.verify_math_claim_handler({'statement': '(x + 1)**2 = x**2 + 2*x + 1'}))
+"
+```
+
+**Observed Output:**
+```json
+{"verified": true, "difference_canonical": "0", "verification_hash": "7455f37082820527"}
+```
+
 ---
 
 ## 🎯 Overview
